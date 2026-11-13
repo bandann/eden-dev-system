@@ -1,0 +1,59 @@
+{
+  "_comment": "Plantilla de perfil de operacion. Copiala a profiles/{nombre}/ (p.ej. acme-retail), rellena lo que tu operacion tenga y BORRA lo que no use: un campo vacio significa 'el kit usa su default y pregunta'. Un perfil es INTERNO (ids, personas): no se publica fuera de la organizacion. Precedencia y uso: rules/eden-profiles-rules.md.",
+
+  "profile": "",
+  "source": "",
+  "applies_to": "",
+
+  "company": { "name": "" },
+
+  "tracker": {
+    "provider": "",
+    "time_provider": "",
+    "task_required": false,
+    "statuses": { "in_progress": "", "review": "", "blocked": "" },
+    "_comment": "Ver rules/eden-tracker-rules.md. Ids de workspace o proyecto por defecto, si los hay, en el bloque del provider (asana | smg_hub | clickup). Nunca tokens."
+  },
+
+  "roles": {
+    "qa": { "name": "", "tracker_id": "", "reviews": "" },
+    "production": { "name": "", "tracker_id": "", "owns": "" },
+    "_assign_rule": "A quien se asigna el ticket al pasar a review, y a quien se escalan dudas."
+  },
+
+  "git": {
+    "branches": {},
+    "default_base_hint": "",
+    "_comment": "default_base_hint es solo lo que se PROPONE: la base siempre se pregunta."
+  },
+
+  "shopify": {
+    "default_theme": "",
+    "backup_before_customizing": false
+  },
+
+  "qa": {
+    "breakpoints": { "desktop": [], "tablet": [], "mobile": [] },
+    "pagespeed": { "mobile_min": null, "desktop_min": null },
+    "browsers": [],
+    "console_errors_allowed": 0,
+    "bug_frequency": {},
+    "tool": "",
+    "_comment": "breakpoints: TODOS los anchos que el QA del equipo revisa. tool: p.ej. Pastel (ver skills/pastel-sync)."
+  },
+
+  "severity": {},
+  "priority": {},
+  "phases": {},
+  "warranty": {},
+
+  "daily_reports": {
+    "channel": "",
+    "sod": "",
+    "eod": "",
+    "_comment": "Si el equipo tiene un formato fijo de reporte diario, /eden:mydaily lo produce ademas del suyo."
+  },
+
+  "business_rules": "",
+  "_business_rules_comment": "Ruta opcional a un .md del perfil con reglas de negocio del vertical (p.ej. profiles/acme-retail/business-rules.md). Los skills de QA las verifican si existen."
+}

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="230" viewBox="0 0 960 230" role="img" aria-labelledby="t d" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title id="t">Eden — development kit for Claude Code</title>
+<desc id="d">Plan-first, reuse-first development kit: stack teams, pixel-perfect Figma, security layer and an optional self-learning brain.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/></marker></defs>
+<rect x="0.5" y="0.5" width="959" height="229" rx="16" fill="#ffffff" stroke="#e5e7eb"/>
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#064e3b"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs>
+<rect x="0.5" y="0.5" width="959" height="229" rx="16" fill="url(#g)"/>
+<g transform="translate(64,62)"><path d="M48 4 C 16 8 4 34 8 72 C 46 74 72 52 74 14 C 66 8 58 4 48 4 Z" fill="#bbf7d0"/><path d="M14 66 C 30 46 44 32 64 18" stroke="#065f46" stroke-width="4" fill="none" stroke-linecap="round"/></g>
+<text x="170" y="104" font-size="54" font-weight="800" fill="#ffffff" text-anchor="start">Eden</text>
+<text x="172" y="138" font-size="18" font-weight="500" fill="#d1fae5" text-anchor="start">Plan-first development kit for Claude Code — for any company, client and project</text>
+<rect x="172" y="160" width="76" height="28" rx="14" fill="#065f46" stroke="#34d399"/>
+<text x="210.0" y="179" font-size="13" font-weight="600" fill="#ecfdf5" text-anchor="middle">Shopify</text>
+<rect x="258" y="160" width="91" height="28" rx="14" fill="#065f46" stroke="#34d399"/>
+<text x="303.5" y="179" font-size="13" font-weight="600" fill="#ecfdf5" text-anchor="middle">WordPress</text>
+<rect x="359" y="160" width="135" height="28" rx="14" fill="#065f46" stroke="#34d399"/>
+<text x="426.5" y="179" font-size="13" font-weight="600" fill="#ecfdf5" text-anchor="middle">React · Next.js</text>
+<rect x="504" y="160" width="91" height="28" rx="14" fill="#065f46" stroke="#34d399"/>
+<text x="549.5" y="179" font-size="13" font-weight="600" fill="#ecfdf5" text-anchor="middle">Figma 1:1</text>
+<rect x="605" y="160" width="84" height="28" rx="14" fill="#065f46" stroke="#34d399"/>
+<text x="647.0" y="179" font-size="13" font-weight="600" fill="#ecfdf5" text-anchor="middle">Security</text>
+<rect x="699" y="160" width="127" height="28" rx="14" fill="#065f46" stroke="#34d399"/>
+<text x="762.5" y="179" font-size="13" font-weight="600" fill="#ecfdf5" text-anchor="middle">Learning brain</text>
+</svg>

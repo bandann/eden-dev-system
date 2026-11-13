@@ -1,0 +1,111 @@
+{
+  "description": "Eden hooks — eden-load-rules, eden-brain-recall, eden-context-resume (session start); eden-context-watch (each prompt); eden-brain-learn-on-exit, eden-brain-learn-before-compact, eden-brain-learn-on-commit (learning); eden-commit-guard (blocks commits/pushes with secrets or an AI signature); eden-secrets-readonly (blocks reading .env, keys and credential files); eden-figma-readonly (blocks Figma writes).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I \"${CLAUDE_PLUGIN_ROOT}/hooks/eden_rules.py\"",
+            "timeout": 15,
+            "statusMessage": "eden-load-rules"
+          },
+          {
+            "type": "command",
+            "command": "python -I \"${CLAUDE_PLUGIN_ROOT}/hooks/eden_brain.py\" start",
+            "timeout": 15,
+            "statusMessage": "eden-brain-recall"
+          }
+        ]
+      },
+      {
+        "matcher": "clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I \"${CLAUDE_PLUGIN_ROOT}/hooks/eden_context.py\" resume",
+            "timeout": 15,
+            "statusMessage": "eden-context-resume"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I \"${CLAUDE_PLUGIN_ROOT}/hooks/eden_context.py\" watch",
+            "timeout": 20,
+            "statusMessage": "eden-context-watch"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I \"${CLAUDE_PLUGIN_ROOT}/hooks/eden_brain.py\" learn",
+            "timeout": 30,
+            "statusMessage": "eden-brain-learn-on-exit"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I \"${CLAUDE_PLUGIN_ROOT}/hooks/eden_brain.py\" learn",
+            "timeout": 30,
+            "statusMessage": "eden-brain-learn-before-compact"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|run_shell_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I \"${CLAUDE_PLUGIN_ROOT}/hooks/eden_guard.py\"",
+            "timeout": 60,
+            "statusMessage": "eden-commit-guard"
+          },
+          {
+            "type": "command",
+            "command": "python -I \"${CLAUDE_PLUGIN_ROOT}/hooks/eden_brain.py\" learn",
+            "timeout": 15,
+            "statusMessage": "eden-brain-learn-on-commit"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|NotebookRead|Grep|Bash|PowerShell|read_file|read_many_files|run_shell_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I \"${CLAUDE_PLUGIN_ROOT}/hooks/eden_secret_guard.py\"",
+            "timeout": 10,
+            "statusMessage": "eden-secrets-readonly"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*[Ff]igma.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I \"${CLAUDE_PLUGIN_ROOT}/hooks/eden_figma_guard.py\"",
+            "timeout": 10,
+            "statusMessage": "eden-figma-readonly"
+          }
+        ]
+      }
+    ]
+  }
+}

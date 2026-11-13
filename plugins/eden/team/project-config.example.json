@@ -1,0 +1,238 @@
+{
+  "_comment": "Copia este archivo como .claude/project-config.json dentro de cada proyecto y complétalo. Es lo que ignition-task y eden:design-auditor leen para no estimar valores.",
+
+  "company": {
+    "name": "",
+    "_comment": "Empresa/agencia que opera el proyecto (p.ej. Acme, SMG). Vacio = se hereda del perfil o de ~/.claude/eden-config.json. Solo se usa en textos dirigidos a personas; nunca en codigo."
+  },
+
+  "profile": "",
+  "_profile_comment": "Perfil de operacion a activar, p.ej. acme-retail. Vacio = sin perfil: el kit usa sus defaults agnosticos y pregunta lo que no sabe.",
+
+  "project": {
+    "name": "nombre-del-proyecto",
+    "client": "nombre-del-cliente",
+    "prefix": "",
+    "_prefix_comment": "Prefijo del codigo PROPIO de este proyecto: tokens CSS (--{prefix}-*), snippet {prefix}-design-tokens, funciones PHP {prefix}_*, text domain {prefix}-core, bloques {prefix}/*, REST {prefix}/v1. Corto, minusculas, del cliente (p.ej. dp para Don Pepino). Proyectos que ya usan --fl-* declaran fl. Vacio = se pregunta antes de escribir codigo con prefijo.",
+    "namespace": "",
+    "_namespace_comment": "Namespace PHP en PascalCase para el codigo propio (p.ej. DonPepino). Solo WordPress / PHP.",
+    "stack": "shopify",
+    "_stack_options": "shopify | shopify-app | wordpress | react | php | node | mobile | astro | custom",
+    "_stack_comment": "El stack PRINCIPAL. Determina que modulo lee el kit (rules/{stack}/) y su sabor (bloque del stack, abajo). Detectarlo: scripts/eden_stack.py detect. Sin modulo para el stack, se aplica el nucleo y se declara. Ver rules/eden-stack-rules.md.",
+    "stacks": [],
+    "_stacks_comment": "Solo si el proyecto tiene mas de una plataforma (p.ej. WP headless + front Astro). Formato: [{ \"stack\": \"wordpress\", \"path\": \"cms/\" }]. Cada tarea declara en cual trabaja."
+  },
+
+  "shopify": {
+    "store": "",
+    "_store_comment": "Dominio xxx.myshopify.com. Lo escribe /eden:shopify-setup preguntandoselo al dev.",
+    "theme_base": "",
+    "_theme_base_options": "horizon | dawn | otra (nombre)",
+    "theme_version": "",
+    "_theme_version_comment": "theme_info.theme_version de config/settings_schema.json al hacer el setup o el onboarding.",
+    "environments": {
+      "development": { "theme_id": "" },
+      "staging": { "theme_id": "" }
+    },
+    "_environments_comment": "Espejo de shopify.theme.toml. Solo IDs de tema: NUNCA tokens ni contrasenas de tienda en este archivo.",
+    "live_theme_id": "",
+    "_live_theme_comment": "Solo para identificarlo y NO tocarlo. Ningun agente trabaja contra el tema publicado sin autorizacion del dev en el momento.",
+    "locales": [],
+    "markets": false,
+    "tokens_snippet": "snippets/{prefix}-design-tokens.liquid",
+    "theme_check_config": ".theme-check.yml",
+    "_policy_comment": "shopify theme push esta PROHIBIDO para el kit en cualquier tema: la subida la hace el dev. theme pull / theme dev solo con autorizacion explicita. Ver teams/shopify/roster.md.",
+    "_comment": "Lo rellena /eden:shopify-setup (o el onboarding de /eden:shopify). Solo aplica si project.stack (o algun project.stacks[]) es shopify."
+  },
+
+  "wordpress": {
+    "flavor": "",
+    "_flavor_options": "block-theme | classic-theme | page-builder | headless",
+    "_flavor_comment": "Lo escribe /eden:wp-setup preguntandoselo al dev. Determina que sabor de rules/wordpress/flavors/ aplica y que es una 'seccion' en este proyecto. Vacio = /eden:wp-setup no ha corrido; se pregunta antes de escribir codigo.",
+    "local_env": "",
+    "_local_env_options": "localwp | ddev | wp-env | docker | other",
+    "theme_path": "",
+    "_theme_path_comment": "Ruta del child theme que mantenemos, p.ej. wp-content/themes/{cliente}-child.",
+    "parent_theme": "",
+    "mu_plugin_path": "",
+    "_mu_plugin_comment": "Donde vive la FUNCIONALIDAD del sitio (CPTs, campos, endpoints). Sobrevive al cambio de tema. p.ej. wp-content/mu-plugins/{cliente}-core.",
+    "builder": "",
+    "_builder_comment": "Solo si flavor=page-builder: elementor | divi | wpbakery | beaver.",
+    "site_url_local": "",
+    "site_url_staging": "",
+    "site_url_prod": "",
+    "_urls_comment": "Las tres URLs son lo que /eden:wp-import usa para el search-replace. Sin ellas no se migra nada.",
+    "php_version": "",
+    "wp_version": "",
+    "text_domain": "",
+    "prefix": "",
+    "_prefix_comment": "Vacio = se usa project.prefix. Solo se rellena si WordPress necesita uno distinto. El namespace de WP es global y plano.",
+    "acf": false,
+    "woocommerce": false,
+    "multisite": false,
+    "_comment": "Lo rellena /eden:wp-setup. Solo aplica si project.stack (o algun project.stacks[]) es wordpress."
+  },
+
+  "react": {
+    "flavor": "",
+    "_flavor_options": "spa | next",
+    "package_manager": "",
+    "node_version": "",
+    "_comment": "Lo rellena /eden:react-setup. Solo aplica si project.stack (o algun project.stacks[]) es react."
+  },
+
+  "php": {
+    "flavor": "",
+    "_flavor_options": "php | laravel",
+    "php_version": "",
+    "_comment": "Lo rellena /eden:php-setup. Solo aplica si project.stack (o algun project.stacks[]) es php."
+  },
+
+  "node": {
+    "flavor": "",
+    "_flavor_options": "node | express | nest",
+    "package_manager": "",
+    "node_version": "",
+    "_comment": "Lo rellena /eden:node-setup. Solo aplica si project.stack (o algun project.stacks[]) es node."
+  },
+
+  "mobile": {
+    "flavor": "",
+    "_flavor_options": "react-native | ionic",
+    "_comment": "Lo rellena /eden:mobile-setup. Solo aplica si project.stack (o algun project.stacks[]) es mobile."
+  },
+
+  "shopify_app": {
+    "client_id": "",
+    "_client_id_comment": "Solo el client_id publico de la app. Nunca el client secret ni tokens: van en .env o en el keychain.",
+    "dev_store": "",
+    "_comment": "Lo rellena /eden:shopify-app-setup. Solo aplica si project.stack (o algun project.stacks[]) es shopify-app."
+  },
+
+  "tracker": {
+    "provider": "",
+    "_provider_options": "asana | smg-hub | clickup | none",
+    "_provider_comment": "Donde viven los tickets. Vacio = se hereda del perfil, luego de ~/.claude/eden-config.json, y si nada lo dice: asana. Ver rules/eden-tracker-rules.md.",
+    "time_provider": "",
+    "_time_provider_comment": "Donde se registra el tiempo. Vacio = igual que provider. En equipos SMG suele ser smg-hub aunque los tickets esten en Asana. none = se reporta al dev.",
+    "task_required": false,
+    "statuses": {
+      "in_progress": "",
+      "review": "",
+      "blocked": ""
+    },
+    "_statuses_comment": "Nombre REAL de la seccion/estado en el tablero para cada estado logico. Vacio = se usan los habituales del tracker y, si no coinciden, se pregunta. Nunca ids.",
+    "asana": { "workspace_gid": "", "project_gid": "" },
+    "smg_hub": { "project_id": "", "client_id": "" },
+    "clickup": { "workspace_id": "", "list_id": "" },
+    "_comment": "Solo ids y nombres. NUNCA tokens ni PATs: viven en el keychain o en la config del conector."
+  },
+
+
+  "antislop": {
+    "mode": "ask",
+    "_mode_options": "ask | on | off",
+    "_comment": "Capa estetica y de voz de anti-slop cuando NO hay diseno definido (Figma, captura, imagen). ask = pregunta al dev; on/off = excepcion explicita del dev, se aplica o se omite sin preguntar. La capa funcional (nada inventado, estados, teclado, contraste) no se desactiva con ningun valor. Ver rules/on-demand/eden-antislop-rules.md."
+  },
+
+  "figma": {
+    "file_key": "",
+    "url_desktop": "",
+    "url_mobile": "",
+    "allow_writes": false,
+    "_comment": "Al menos una URL es necesaria para tareas visuales. allow_writes: Figma es de solo lectura (hooks/eden_figma_guard.py bloquea toda escritura); solo true, puesto a propósito por el dev, la permite en este proyecto."
+  },
+
+  "breakpoints": {
+    "mobile": 375,
+    "tablet": 768,
+    "desktop": 1440,
+    "_comment": "Anchos EXACTOS de los frames de Figma — los escribe create-fundaments. Son la regla de medir del auditor de diseño: si están mal, todo el QA de diseño queda mal."
+  },
+
+  "design_system": {
+    "status": "pending",
+    "_status_options": "pending | installed | stale",
+    "tokens_path": "",
+    "doc_path": "docs/design-system.md",
+    "figma_version": "",
+    "updated": "",
+    "_comment": "Lo escribe create-fundaments. Con status 'pending', ignition-task propone levantar los fundamentos antes de planear cualquier tarea visual."
+  },
+
+  "git": {
+    "protected_branches": ["main", "develop"],
+    "default_base_hint": "",
+    "_comment": "default_base_hint es solo una sugerencia que se muestra al dev. La base SIEMPRE se pregunta."
+  },
+
+  "sitemap": {
+    "status": "pending",
+    "_status_options": "pending | generated | stale",
+    "doc_path": "docs/sitemap.md",
+    "figma_version": "",
+    "updated": "",
+    "_comment": "Lo escribe create-sitemap. Mapa de páginas y secciones (NODE-SECTION) con su node-id de Figma y su estado real. ignition-task lo usa para ubicar cada tarea en el proyecto."
+  },
+
+  "design_cache": {
+    "enabled": true,
+    "_comment": "Caché del Figma medido (hooks/eden_design.py, rules/on-demand/eden-design-cache-rules.md). Vive en .claude/brain/design/ si hay vault, si no fuera del repo. false = medir siempre en Figma."
+  },
+
+  "brain": {
+    "status": "pending",
+    "_status_options": "pending | initialized | stale",
+    "vault_path": ".claude/brain",
+    "graph_path": "graphify-out/graph.json",
+    "generated_path": ".claude/brain/code",
+    "graph_built": "",
+    "_graph_built_comment": "Fecha de la ultima construccion del grafo. Si es anterior al ultimo commit que toca lo que se pregunta, el grafo MIENTE: se dice y se verifica contra el repo. Lo escribe /eden:brain build.",
+    "indexed": [],
+    "_indexed_comment": "Que entra al grafo. Se confirma con el dev la primera vez. Tipico: [\"{codigo}\", \"docs/\", \".claude/brain/memory\", \".claude/brain/decisions\"].",
+    "excluded": ["node_modules", "vendor", "wp-admin", "wp-includes", "wp-content/uploads", "wp-content/plugins", ".env", ".obsidian", "_templates", ".claude/brain/code", "graphify-out"],
+    "_excluded_comment": "Nunca se indexa. Se declara la exclusion, no se asume. Lo que se indexa de mas AHOGA el grafo: en una prueba real unos pocos JSON de configuracion generaron 1147 de 1149 aristas.",
+    "_comment": "Lo escribe /eden:brain init. El cerebro son 3 capas: grafo de codigo (generado, desechable), vault de Obsidian (curado, se versiona) y memoria de trabajo (efimera). Ver rules/eden-brain-rules.md."
+  },
+
+  "preview": {
+    "base_url": "",
+    "_comment": "Base para armar links de preview a la página exacta del cambio."
+  },
+
+  "context": {
+    "_comment": "Opcional: sobreescribe save_at / warn_at / enabled de ~/.claude/eden-config.json solo para este proyecto."
+  },
+
+  "review": {
+    "dual": false,
+    "_dual_comment": "true = turnoff-task hace siempre la revision doble a ciegas (dos revisores independientes). Si no, se activa con --dual o se propone en superficies de riesgo.",
+    "precommit": {
+      "enabled": false,
+      "block_on": "high",
+      "max_diff_chars": 60000,
+      "timeout_seconds": 120,
+      "_comment": "Revision de IA antes de cada commit (hook pre-commit de /eden:setup githooks), con el proveedor de /eden:setup ai. Bloquea solo hallazgos >= block_on (critical > high > medium > low). Si el proveedor falla, avisa y deja pasar. Gasta tokens en cada commit: por eso viene apagada. EDEN_AI_REVIEW_OFF=1 la salta en un commit."
+    }
+  },
+
+  "go": {
+    "auto_default": false,
+    "_comment": "true = /eden:go arranca en modo autonomo (--auto) en este proyecto: avanza en lo local y reversible, anota las dudas no bloqueantes en .claude/context/questions-{tarea}.md y solo se detiene ante lo bloqueante. El cierre (commit, push, PR, tracker) siempre espera el si del dev."
+  },
+
+  "uiux": {
+    "mode": "ask",
+    "_comment": "UI/UX Pro Max (dependencia externa, /eden:uiux-pro) cuando una tarea con UI no tiene Figma ni otro diseno. ask = Eden lo propone y espera el si del dev; off = nunca lo propone. No hay modo automatico."
+  },
+
+  "security": {
+    "allow_read": [],
+    "_comment": "Patrones (fnmatch) de archivos con secretos que el dev autoriza a leer (eden-secrets-readonly). Vacio = ninguno. Ejemplo: [\".env.test\"]."
+  },
+
+  "learning": {
+    "enabled": true,
+    "_comment": "false = este proyecto nunca se aprende en el cerebro (ni sesiones ni commits). Las exclusiones globales van en ~/.claude/eden-config.json -> learning.exclude."
+  }
+}

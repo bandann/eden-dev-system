@@ -1,0 +1,58 @@
+{
+  "_comment": "Config GLOBAL del dev para Eden. El instalador la siembra como ~/.claude/eden-config.json si no existe y nunca la sobrescribe. Es el default de TODOS sus proyectos; un perfil o el .claude/project-config.json de un proyecto la pisan. Precedencia: dev en el momento > proyecto > perfil > esta config > nucleo.",
+  "company": {
+    "name": "",
+    "_comment": "Empresa/agencia del dev (p.ej. SMG, Acme). Solo para textos dirigidos a personas."
+  },
+  "tracker": {
+    "provider": "asana",
+    "_provider_options": "asana | smg-hub | clickup | none",
+    "time_provider": "",
+    "_time_provider_comment": "Vacio = igual que provider. smg-hub si el equipo registra horas en el Hub aunque los tickets esten en Asana.",
+    "_comment": "Solo el default. Los ids (workspace, proyecto) son por proyecto: van en su project-config.json. NUNCA tokens ni PATs aqui."
+  },
+  "antislop": {
+    "mode": "ask",
+    "_mode_options": "ask | on | off",
+    "_comment": "Default de todos tus proyectos para la capa estetica y de voz de anti-slop cuando no hay diseno definido. ask = pregunta; on/off = excepcion explicita tuya. La capa funcional no se desactiva. El project-config.json de cada proyecto lo pisa."
+  },
+  "context": {
+    "enabled": true,
+    "save_at": 60,
+    "warn_at": 80,
+    "window": "auto",
+    "_comment": "Vigilante de contexto (hooks/eden_context.py). save_at: % al que guarda la sesion en el cerebro y pide refrescar el checkpoint. warn_at: % al que avisa si ya es seguro hacer /clear. window: tokens de la ventana, o auto (por modelo; si la barra de estado de Eden esta activa, usa su porcentaje exacto)."
+  },
+
+  "ai": {
+    "provider": "claude",
+    "_provider_options": "CLI: claude | codex | gemini | qwen. API: anthropic | openai | openrouter | google | moonshot | zai | minimax | deepseek | dashscope | xai | ollama. Alias: kimi=moonshot, glm=zai, grok=xai, chatgpt=openai, qwen-api=dashscope. O cualquier clave que definas en providers.",
+    "model": "",
+    "_model_comment": "Vacio = providers[p].model, o el default del proveedor (learning.model solo aplica al CLI claude). Las APIs, salvo anthropic, no traen modelo fijo: ponlo aqui (p. ej. el modelo rapido de tu proveedor).",
+    "timeout_seconds": 900,
+    "tiers": {
+      "_comment": "Niveles de modelo de los agentes por herramienta (rules/eden-model-strategy-rules.md): strong = la sesion principal, fast = los agentes. Los agentes del kit declaran model: sonnet (= fast). Vacio = los defaults de scripts/eden_ai.py TIERS (Claude: opus/sonnet; Qwen: inherit/fast; Cursor: inherit; el resto: se omite y el agente hereda el modelo de la sesion). Ejemplo: \"codex\": {\"fast\": \"<modelo rapido de tu cuenta>\"}, \"opencode\": {\"fast\": \"deepseek/deepseek-flash\"}."
+    },
+    "providers": {
+      "_comment": "Sobrescribe los integrados o define los tuyos. CLI: {\"cmd\": [...]} — el prompt entra por stdin, {model} se sustituye, add_dir_flag (opcional) se repite por carpeta. API: {\"api\": \"anthropic\" | \"openai\", \"base_url\": \"https://...\", \"api_key_env\": \"NOMBRE_DE_LA_VARIABLE\", \"model\": \"...\", \"max_tokens\": 8192, \"auth\": \"x-api-key\" | \"bearer\" | \"both\"} — la clave se lee de esa variable de entorno, NUNCA se escribe aqui. Solo https (o http a localhost). Ejemplo: \"mi-api\": {\"api\": \"openai\", \"base_url\": \"https://llm.example.com/v1\", \"api_key_env\": \"MI_API_KEY\", \"model\": \"mi-modelo\"}."
+    },
+    "_comment": "Proveedor de IA para las llamadas que Eden hace por su cuenta (hoy, la destilacion del cerebro). CLIs: corren en solo lectura cuando el CLI lo permite (claude: --safe-mode + allowedTools; codex: --sandbox read-only) y necesitan estar instalados y con sesion. APIs: una peticion HTTPS sin herramientas; la sesion condensada (ya redactada) y las notas del proyecto viajan dentro del prompt, o sea, se envian a ese proveedor. NOTA: esto no cambia con que modelo hablas en la sesion; solo las llamadas headless de Eden."
+  },
+
+  "learning": {
+    "enabled": true,
+    "model": "sonnet",
+    "min_user_messages": 4,
+    "min_tool_uses": 1,
+    "max_notes_per_session": 6,
+    "graphify_update": true,
+    "learn_on_git": true,
+    "queue_max_age_days": 30,
+    "exclude": {
+      "projects": [],
+      "bash_patterns": [],
+      "_comment": "projects: nombres o rutas con comodines que nunca se aprenden (p.ej. \"cliente-confidencial\", \"C:/Users/*/Sites/privado/*\"). bash_patterns: regex de comandos que no se registran (p.ej. \"\\.env\", \"ssh \")."
+    },
+    "_comment": "Aprendizaje automatico del cerebro (hooks SessionStart/SessionEnd/PreCompact). Lo del proyecto se escribe directo; lo general va a eden-brain/inbox para aprobar con /eden:brain inbox. Ver rules/eden-brain-rules.md. learn_on_git: tambien destila antes de cada git commit / push que ejecuta Claude (nota episodica por rama). Los secretos y lo marcado <private>...</private> se redactan antes de encolar. Un proyecto se excluye tambien con learning.enabled:false en su project-config.json."
+  }
+}

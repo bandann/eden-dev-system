@@ -1,0 +1,14 @@
+{
+  "name": "eden-kit",
+  "owner": { "name": "bandann" },
+  "metadata": { "description": "Eden development kit for Claude Code." },
+  "plugins": [
+    {
+      "name": "eden",
+      "source": "./plugins/eden",
+      "displayName": "Eden",
+      "description": "Plan-first, reuse-first development kit with stack teams, security layer and optional self-learning brain.",
+      "category": "workflow"
+    }
+  ]
+}
