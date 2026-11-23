@@ -45,10 +45,10 @@ check("no brain -> ~/.claude/eden-cache", d == m.NO_BRAIN_CACHE / "client-repo" 
 fake_brain.mkdir()
 d, root = m.cache_dir(str(proj))
 check("global brain -> projects/slug/design", d == fake_brain / "projects" / "client-repo" / "design")
-# local vault -> vault design/
+# a legacy in-repo vault is ignored: the cache never lives in the client repo
 (proj / ".claude" / "brain").mkdir(parents=True)
 d, root = m.cache_dir(str(proj))
-check("local vault -> .claude/brain/design", d.resolve() == (proj / ".claude" / "brain" / "design").resolve())
+check("legacy vault ignored -> still projects/slug/design", d == fake_brain / "projects" / "client-repo" / "design")
 
 # --- file state extraction
 check("state from file data", m.file_state({"name": "Site", "lastModified": "2026-10-01T10:00:00Z", "version": "111"})

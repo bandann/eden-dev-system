@@ -11,9 +11,9 @@ description: >
   hubiera; `build` construye o actualiza el grafo; `query` responde desde el grafo con presupuesto de
   tokens en vez de leer archivos; `affected` da blast radius por relaciones reales; `note` escribe una
   nota enlazada; `sync` reexporta el grafo al vault; `promote` propone subir un hecho local a global;
-  `status` dice si el grafo está desactualizado; `open` abre el vault en Obsidian; `inbox` revisa y
-  aprueba lo que el cerebro aprendió solo; `learn` muestra y controla el aprendizaje automático.
-argument-hint: "[init | build | query | affected | note | sync | promote | status | doctor | open | inbox | learn] [| argumento]"
+  `status` dice si el grafo está desactualizado; `open` abre el vault en Obsidian; `inbox` revisa la
+  bandeja si el dev pidió aprobar lo general; `learn` muestra y controla el aprendizaje automático.
+argument-hint: "[init | build | query | affected | note | sync | promote | status | doctor | open | inbox | learn | recall | team | migrate-vault] [| argumento]"
 disable-model-invocation: true
 ---
 
@@ -28,12 +28,14 @@ curado) y la memoria de trabajo (`checkpoint.md`, efímera). La regla completa e
 > **Idioma:** al dev, en español. Todo lo que quede escrito en el vault —notas, títulos, tags— en
 > **inglés**, como el resto de lo que el kit escribe (`eden-workflow-rules.md`).
 
-**Lo que NO hace:** commitear, pushear, ni escribir en el cerebro **global** sin la aprobación del dev.
+**Lo que NO hace:** commitear ni pushear. El cerebro global se escribe solo (lo verificado); `note` y
+`promote` escriben en él cuando el dev los invoca.
 
 > **Aprendizaje automático.** Además de lo que se escribe a mano, el cerebro aprende solo: al cerrar
 > cada sesión con trabajo real, un destilador en segundo plano lee la conversación y escribe lo que vale
-> la pena recordar. Lo del proyecto va directo a su cerebro; lo general (tu forma de trabajar, hechos de
-> una plataforma) espera en `~/.claude/eden-brain/inbox/` a que lo apruebes con `inbox`. Al iniciar
+> la pena recordar. Lo del proyecto va directo a su cerebro y lo general verificado (tu forma de trabajar,
+> hechos de una plataforma) directo al global, sin preguntar. Con `learning.global_writes: "inbox"` lo
+> general vuelve a esperar tu sí en `inbox`. Al iniciar
 > sesión, lo aprendido se carga solo. Cómo funciona: `rules/eden-brain-rules.md` § Aprendizaje
 > automático. Se controla con `learn`.
 
@@ -42,12 +44,19 @@ curado) y la memoria de trabajo (`checkpoint.md`, efímera). La regla completa e
 ### Dónde vive cada cosa
 
 ```
-~/.claude/eden-brain/                 GLOBAL — todos los proyectos. Curado. Aprobación del dev.
-{proyecto}/.claude/brain/           LOCAL — este cliente. Curado, se versiona.
-{proyecto}/.claude/brain/code/      GENERADO por Graphify. Desechable. En .gitignore.
-{proyecto}/.claude/brain/design/    CACHÉ del Figma medido (eden_design.py). Se versiona; shots/ no.
-{proyecto}/graphify-out/graph.json  EL GRAFO. Desechable. En .gitignore.
+~/.claude/eden-brain/                          PERSONAL — tu cerebro. Se escribe solo (lo verificado).
+~/.claude/eden-brain/projects/{proyecto}/      lo tuyo de cada proyecto (curado)
+~/.claude/eden-brain/projects/{proyecto}/code/ GENERADO por Graphify. Desechable.
+~/.claude/eden-brain/projects/{proyecto}/design/ CACHÉ del Figma medido (eden_design.py)
+~/.claude/eden-teams/{equipo}/projects/{proyecto}/  COMPARTIDO — lo que el equipo sabe del proyecto (`team`)
+{proyecto}/graphify-out/graph.json             EL GRAFO. Desechable. Ignorado en .git/info/exclude
 ```
+
+**Nada personal se escribe en el repo del cliente.** `{proyecto}` es el nombre que sale del remoto de git
+(`owner-repo`), así que dos clones del mismo repo comparten carpeta. Lo único que Graphify deja dentro del
+repo (`graphify-out/`) se ignora en `.git/info/exclude`, que es local y no se versiona: nunca se toca el
+`.gitignore` del cliente. Un repo con un `.claude/brain/` de una versión anterior se avisa al iniciar
+sesión; `migrate-vault` copia sus notas al cerebro.
 
 La caché de diseño (`rules/on-demand/eden-design-cache-rules.md`) se consulta con
 `python -I "${CLAUDE_PLUGIN_ROOT}/hooks/eden_design.py" status`: qué archivos de Figma y qué secciones
@@ -55,29 +64,21 @@ tiene guardadas, y cuándo se comprobó cada archivo por última vez. `/eden:bra
 
 ---
 
-### `init` — crear el cerebro de este proyecto
+### `init` — preparar el cerebro de este proyecto (fuera del repo)
 
-1. **Mira qué hay ya.** Si `.claude/brain/` existe, **no lo rehace**: reporta el estado y ofrece
-   completar lo que falte. Un init que pisa un cerebro poblado destruye trabajo curado.
-2. **Copia la plantilla** `brain/project/` del kit a `{proyecto}/.claude/brain/`, sustituyendo
-   `{{PROJECT}}`, `{{STACK}}` y `{{DATE}}` con los datos de `.claude/project-config.json`.
-3. **Migra la memoria que hubiera.** Si existe `{proyecto}/.claude/memory/` (la ubicación anterior),
-   mueve su contenido a `brain/memory/` conservando las tres capas, y **deja el directorio viejo con un
-   `MOVED.md`** que apunte al nuevo. No se borra sin decirlo.
-4. **`.gitignore`** — añade lo generado, si no está:
-   ```gitignore
-   .claude/brain/code/
-   graphify-out/
-   .claude/context/
-   .claude/checkpoint.md
-   ```
-   Lo **curado** del vault sí se versiona: es trabajo, y se revisa en el PR como cualquier otro.
-5. **Registra** en `.claude/project-config.json` el bloque `brain{}` y en el `CLAUDE.md` el marcador
-   `<!-- eden-brain: … -->`.
+1. **Mira qué hay ya.** La carpeta del proyecto es `~/.claude/eden-brain/projects/{proyecto}/`
+   (`python -I "${CLAUDE_PLUGIN_ROOT}/hooks/eden_brain.py" pending` y `project_slug` dan el nombre). Si
+   existe, **no la rehace**: reporta el estado y ofrece completar lo que falte.
+2. **Copia la plantilla** `brain/project/` del kit a esa carpeta, sustituyendo `{{PROJECT}}`, `{{STACK}}` y
+   `{{DATE}}`. **Nunca dentro del repo del cliente.**
+3. Si el repo tiene un `.claude/brain/` antiguo, ofrece `migrate-vault`.
+4. Añade `graphify-out/`, `.claude/context/` y `.claude/checkpoint.md` a **`.git/info/exclude`** del repo
+   (local, no se versiona). El `.gitignore` del cliente no se toca.
+5. Si el equipo tiene cerebro compartido, ofrece `team link`.
 6. Ofrece encadenar `build`.
 
 Si el **cerebro global** no existe (`~/.claude/eden-brain/`), se crea desde `brain/global/` — pero
-**vacío de contenido**: los hechos globales solo llegan por `promote`, con aprobación.
+**vacío de contenido**: los hechos globales llegan con el aprendizaje automático o con `promote`.
 
 ---
 
@@ -87,14 +88,14 @@ Si el **cerebro global** no existe (`~/.claude/eden-brain/`), se crea desde `bra
 diciendo qué va a indexar y cuánto pesa el corpus.
 
 ```bash
-graphify <path> --obsidian --obsidian-dir .claude/brain/code
+graphify <path> --obsidian --obsidian-dir ~/.claude/eden-brain/projects/{proyecto}/code
 ```
 
 **Actualizaciones** (baratas, sin LLM):
 
 ```bash
 graphify update <path>
-graphify export obsidian --dir .claude/brain/code
+graphify export obsidian --dir ~/.claude/eden-brain/projects/{proyecto}/code
 ```
 
 Qué se indexa —el dev lo confirma la primera vez y queda escrito en `project-config.json`:
@@ -196,7 +197,7 @@ acaba mintiendo.
 ### `sync` — reexportar el grafo al vault
 
 ```bash
-graphify export obsidian --dir .claude/brain/code
+graphify export obsidian --dir ~/.claude/eden-brain/projects/{proyecto}/code
 ```
 
 Regenera `brain/code/`. **Sobrescribe**: por eso ahí no se edita nunca a mano. Los enlaces desde las
@@ -268,9 +269,11 @@ no hace nada: se le dice al dev que la abra una vez con **Open folder as vault**
 
 ---
 
-### `inbox` — aprobar lo que el cerebro aprendió solo
+### `inbox` — aprobar lo que el cerebro aprendió solo (opcional)
 
-Lista `~/.claude/eden-brain/inbox/*.md` (lo escribe el destilador automático). Para cada propuesta
+Solo hay propuestas si el dev puso `learning.global_writes: "inbox"` en `~/.claude/eden-config.json`
+(por defecto lo general se escribe directo), o si quedaron de una versión anterior. Lista
+`~/.claude/eden-brain/inbox/*.md`. Para cada propuesta
 muestra en **una línea**: tipo (`working-style` · `semantic` · `procedural`), acción (`new` · `update` ·
 `confirm`), la afirmación, y de qué proyecto y sesión salió.
 
@@ -295,6 +298,63 @@ Y aplica lo que el dev diga, **nada sin su respuesta**:
 | **Descartar** | Se mueve a `inbox/_rejected/` (no se borra: el destilador lo consulta para no volver a proponerlo) |
 
 Si la bandeja está vacía, se dice en una línea y se termina.
+
+---
+
+### `team` — el cerebro compartido del equipo
+
+Un repo git **privado** que el equipo comparte, además del cerebro personal de cada uno
+(`scripts/eden_team.py`). Se clona en `~/.claude/eden-teams/{equipo}/` y guarda
+`projects/{proyecto}/`: lo que el equipo sabe de cada proyecto. Un proyecto está en el equipo si esa
+carpeta existe; como el nombre sale del remoto de git, todos los que trabajan en ese repo caen en la
+misma. Tu forma de trabajar y tus notas personales **nunca** van al equipo.
+
+| `team …` | Qué hace | Script |
+|---|---|---|
+| `join {url}` | Clona el cerebro del equipo y lo registra en `eden-config.json` (`teams`) | `eden_team.py join {url} [--name N]` |
+| `init {url}` | Igual, para un repo **vacío** recién creado: le pone `README.md` y `projects/`, y hace push | `eden_team.py init {url} [--name N]` |
+| `link` | Añade **este** proyecto al equipo (`projects/{proyecto}/` con su índice), commit y push | `eden_team.py link [--team N] --cwd {proyecto}` |
+| `status` | Equipos, sus clones, último pull, proyectos y si este está enlazado | `eden_team.py status --cwd {proyecto}` |
+| `pull` | Trae lo nuevo de todos los equipos (el inicio de sesión ya lo hace en segundo plano, cada 10 min como mucho) | `eden_team.py pull` |
+| `doctor` | Remoto alcanzable con tus credenciales, árbol limpio, rama con upstream | `eden_team.py doctor` |
+| `leave {equipo}` | Lo quita de la configuración; el clon se queda en disco | `eden_team.py leave {equipo}` |
+
+Todos con `python -I "${CLAUDE_PLUGIN_ROOT}/scripts/eden_team.py" …`. Quien invoca `/eden:brain team init`,
+`join` o `link` está pidiendo ese clone, commit y push: se ejecuta y se reporta el resultado. Git corre
+sin pedir contraseña (`GIT_TERMINAL_PROMPT=0`): el acceso es el de las credenciales de git del dev. Una
+URL con credenciales dentro se rechaza.
+
+Qué ya hace (fase 1): al iniciar sesión se listan las notas del equipo de este proyecto y el recall de
+cada mensaje busca también en ellas. Escribir en el equipo automáticamente al destilar llega en la fase 2;
+mientras tanto, una nota se comparte copiándola a `projects/{proyecto}/` del clon y haciendo commit y push.
+
+---
+
+### `migrate-vault` — sacar del repo un cerebro antiguo
+
+Las versiones anteriores a 4.1 creaban `.claude/brain/` dentro del repo del cliente. Ya no se usa.
+`python -I "${CLAUDE_PLUGIN_ROOT}/hooks/eden_brain.py" migrate-vault {proyecto}` **copia** sus notas (y la
+caché de diseño sin capturas) a `~/.claude/eden-brain/projects/{proyecto}/`; una nota que ya existe no se
+pisa (la copia queda con `-from-vault`). No borra nada: quitar la carpeta del repo del cliente es un
+commit en ese repo y lo decide el dev.
+
+---
+
+### `recall` — lo que el cerebro le recuerda a cada mensaje
+
+En cada mensaje del dev, el hook `eden-context-watch` busca en las notas las que comparten palabras con lo que
+pidió y las añade al contexto, resumidas (`hooks/eden_recall.py`). Solo del proyecto actual (tu carpeta y la del equipo) y del
+conocimiento general (`semantic/`, `procedural/`): nunca de otro cliente.
+
+| `recall …` | Qué hace |
+|---|---|
+| *(sin argumento)* o `status` | `python -I "${CLAUDE_PLUGIN_ROOT}/hooks/eden_recall.py" status`: si está activo, cuántas notas hay indexadas y los ajustes |
+| `search {texto}` | `python -I "${CLAUDE_PLUGIN_ROOT}/hooks/eden_recall.py" search "{texto}" --cwd {proyecto}`: qué notas saldrían para ese mensaje, con las palabras que coincidieron y su puntuación. Para entender por qué algo salió o no |
+| `index` | Rehace el índice desde cero (`.state/recall.db` es desechable; las notas markdown son la fuente) |
+| `off` / `on` | Pone `recall.enabled` en `~/.claude/eden-config.json` |
+
+Ajustes en `recall` de `eden-config.json`: `top_k` (3), `max_chars` (3000), `repeat_after` (20 mensajes),
+`min_terms` (2 palabras en común como mínimo). Una nota con `status: superseded` no se recuerda.
 
 ---
 
@@ -343,7 +403,7 @@ Con argumento:
    - Su respuesta, **tal cual**, se guarda con Write en
      `~/.claude/eden-brain/.state/replies/{nombre del archivo de la cola}` y se aplica con
      `python -I "${CLAUDE_PLUGIN_ROOT}/hooks/eden_brain.py" apply {archivo} {respuesta}`: valida cada ruta
-     (dentro de `project_brain` o plana en `inbox/`), manda a `.state/quarantine/` la nota que lleve un
+     (dentro de `project_brain`, o `semantic/`, `procedural/` y `me/working-style.md` del global), manda a `.state/quarantine/` la nota que lleve un
      secreto, escribe el resto y retira la sesión de la cola. Con `ok: false` la sesión **se queda** y se
      dice por qué (`format`, `permission`).
    - Se revisan las rutas de `written` antes de dar el lote por bueno.

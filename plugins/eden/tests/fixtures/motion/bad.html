@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;font-family:sans-serif} section{height:900px;padding:40px;border-bottom:1px solid #ccc}
+.box{position:relative;left:0;width:120px;height:120px;background:#f97316;transition:all .4s}
+.box.on{left:300px;width:240px}
+</style></head><body>
+<h1>Bad page</h1>
+<section><div class="box"></div></section><section><div class="box"></div></section><section><div class="box"></div></section>
+<script>
+window.addEventListener('scroll',()=>{document.querySelectorAll('.box').forEach(b=>{const r=b.getBoundingClientRect();b.style.marginTop=(r.top/20)+'px';if(r.top<600)b.classList.add('on')})});
+let x=0;setInterval(()=>{x=(x+5)%300;document.querySelector('h1').style.paddingLeft=x+'px'},16);
+</script></body></html>

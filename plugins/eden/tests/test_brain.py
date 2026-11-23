@@ -52,12 +52,40 @@ bad = {
     "dot folder": note("project", ".obsidian/x.md"),
     "underscore": note("project", "_templates/x.md"),
     "not md": note("project", "semantic/x.txt"),
-    "bad target": note("global", "semantic/x.md"),
+    "bad target": note("shared", "semantic/x.md"),
+    "global episodic": note("global", "episodic/x.md"),
+    "global projects": note("global", "projects/p/x.md"),
+    "global nested": note("global", "semantic/a/x.md"),
+    "global me other": note("global", "me/other.md"),
+    "global inbox": note("global", "inbox/x.md"),
 }
 for name, blk in bad.items():
     ok, kind, w, q = b.apply_output(header, blk + "=== EDEN RESULT: notes=1 ===")
     check(f"reject {name}", not ok and kind == "format" and not w)
 check("nothing escaped", not (tmp / "escape.md").exists())
+
+# general knowledge goes straight into the global brain (no approval by default)
+ok, kind, w, q = b.apply_output(header, note("global", "semantic/pw.md", "---\ntitle: pw\ntopic: pw-chrome\n---\nA")
+                                + note("global", "me/working-style.md", "# How the dev works\n- likes short")
+                                + "=== EDEN RESULT: notes=2 ===")
+check("global semantic + working style written directly", ok and (b.BRAIN / "semantic/pw.md").exists()
+      and (b.BRAIN / "me/working-style.md").read_text(encoding="utf-8").endswith("- likes short\n"))
+check("default mode is auto", b.global_mode({}) == "auto" and b.global_mode({"global_writes": "INBOX"}) == "inbox")
+# same topic in a project folder of the global brain is NOT merged into a general note
+(b.BRAIN / "projects/p1/semantic").mkdir(parents=True, exist_ok=True)
+(b.BRAIN / "projects/p1/semantic/local.md").write_text("---\ntitle: l\ntopic: same-topic\n---\n", encoding="utf-8")
+ok, kind, w, q = b.apply_output(header, note("global", "semantic/gen.md", "---\ntitle: g\ntopic: same-topic\n---\nG")
+                                + "=== EDEN RESULT: notes=1 ===")
+check("general note does not merge into a project note", ok and (b.BRAIN / "semantic/gen.md").exists())
+ok, kind, w, q = b.apply_output(header, note("global", "procedural/pw2.md", "---\ntitle: pw2\ntopic: pw-chrome\n---\nB")
+                                + "=== EDEN RESULT: notes=1 ===")
+check("general topic dedupe", ok and not (b.BRAIN / "procedural/pw2.md").exists()
+      and (b.BRAIN / "semantic/pw.md").read_text(encoding="utf-8").endswith("B\n"))
+# opt-in approval mode: the same note lands in the inbox instead
+ih = dict(header, global_writes="inbox", date="2026-11-12")
+ok, kind, w, q = b.apply_output(ih, note("global", "semantic/later.md") + "=== EDEN RESULT: notes=1 ===")
+check("inbox mode redirects general notes", ok and (b.BRAIN / "inbox/2026-11-12-later.md").exists()
+      and not (b.BRAIN / "semantic/later.md").exists())
 
 # a bad block among good ones writes nothing
 ok, kind, w, q = b.apply_output(header, note("project", "semantic/ok2.md") + bad["dotdot"] + "=== EDEN RESULT: notes=2 ===")
@@ -103,6 +131,11 @@ hdr = {"part": 2, "parts": 3, "global_brain": "g", "project": "p", "project_brai
        "project_brain_is_local": False, "date": "d", "session_id": "s", "branch": "b", "max_notes": 6}
 pr = b.run_prompt(Path("q.md"), hdr)
 check("prompt has part + protocol", "Tramo 2 de 3" in pr and "EDEN RESULT" in pr)
+check("prompt says general notes are written directly", "se escribe directo" in pr
+      and "bandeja" in b.run_prompt(Path("q.md"), dict(hdr, global_writes="inbox")))
+dp = b.PROMPT_FILE.read_text(encoding="utf-8")
+check("distill prompt: global target, no inbox proposals", "target: global" in dp and "target: inbox" not in dp
+      and "**Proposal:**" not in dp)
 
 # no-window flag
 check("NO_WINDOW set on windows", b.NO_WINDOW == 0x08000000)

@@ -100,7 +100,7 @@ afirmación: se verifica. Nunca se delega hablar con el dev, decidir el alcance,
      código de WordPress, o se propone correr /eden:wp-setup. -->
 <!-- eden-brain: pendiente -->
 <!-- ↑ Cerebro del proyecto. Lo reemplaza /eden:brain init por:
-     eden-brain: vault=.claude/brain graph=graphify-out/graph.json built=YYYY-MM-DD
+     eden-brain: vault=~/.claude/eden-brain/projects/{proyecto} graph=graphify-out/graph.json built=YYYY-MM-DD
      Tres capas: grafo de código (generado, desechable), vault de Obsidian (curado, se versiona) y
      memoria de trabajo (efímera). Ver rules/eden-brain-rules.md -->
 <!-- Tracker (Asana por defecto, SMG Hub o ClickUp): se declara en .claude/project-config.json → tracker,
@@ -151,7 +151,7 @@ en contexto queda el puntero. **Nunca** se sueltan el requerimiento, el plan, la
 pendiente, y **nada se suelta sin haberlo escrito**. Ver `eden-context-rules.md`.
 
 **Memoria — cuatro capas, dentro del cerebro.** Trabajo (`.claude/checkpoint.md`), episódica, semántica
-y procedural, en dos ámbitos: `~/.claude/eden-brain/` (global) y `{proyecto}/.claude/brain/memory/`
+y procedural, en dos ámbitos: `~/.claude/eden-brain/` (global) y `~/.claude/eden-brain/projects/{proyecto}/`
 (local). Se consulta al arrancar y se consolida al cerrar. **Lo local se escribe solo; lo global espera
 la aprobación del dev.** No se memoriza lo que ya está en el repo — se enlaza. Ver `eden-memory-rules.md`.
 

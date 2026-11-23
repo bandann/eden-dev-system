@@ -40,6 +40,7 @@ es agregar su roster, no editar veinte skills.
 | `quality-auditor` | Performance, accesibilidad, SEO, analytics | No |
 | `security-auditor` | Auditar la seguridad del diff o del proyecto: modelo de amenazas, checklist OWASP, secretos, dependencias; reporta con severidad | No |
 | `migrator` | Mover datos o sitios entre entornos | Sí, con backup |
+| `motion` | Crear, modificar u optimizar animaciones web (CSS avanzado, Web Animations API, librerías aprobadas) con `eden-motion-rules.md`; equipo transversal `teams/motion/roster.md` | Sí, en los archivos del stack que le asigna el encargo |
 
 Un rol nuevo se agrega **aquí primero**, y después en los rosters. Un roster no inventa roles.
 

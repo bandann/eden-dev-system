@@ -177,22 +177,22 @@
 
   "design_cache": {
     "enabled": true,
-    "_comment": "Caché del Figma medido (hooks/eden_design.py, rules/on-demand/eden-design-cache-rules.md). Vive en .claude/brain/design/ si hay vault, si no fuera del repo. false = medir siempre en Figma."
+    "_comment": "Caché del Figma medido (hooks/eden_design.py, rules/on-demand/eden-design-cache-rules.md). Vive fuera del repo, en el cerebro del proyecto. false = medir siempre en Figma."
   },
 
   "brain": {
     "status": "pending",
     "_status_options": "pending | initialized | stale",
-    "vault_path": ".claude/brain",
+    "vault_path": "~/.claude/eden-brain/projects/{proyecto}",
     "graph_path": "graphify-out/graph.json",
-    "generated_path": ".claude/brain/code",
+    "generated_path": "~/.claude/eden-brain/projects/{proyecto}/code",
     "graph_built": "",
     "_graph_built_comment": "Fecha de la ultima construccion del grafo. Si es anterior al ultimo commit que toca lo que se pregunta, el grafo MIENTE: se dice y se verifica contra el repo. Lo escribe /eden:brain build.",
     "indexed": [],
-    "_indexed_comment": "Que entra al grafo. Se confirma con el dev la primera vez. Tipico: [\"{codigo}\", \"docs/\", \".claude/brain/memory\", \".claude/brain/decisions\"].",
-    "excluded": ["node_modules", "vendor", "wp-admin", "wp-includes", "wp-content/uploads", "wp-content/plugins", ".env", ".obsidian", "_templates", ".claude/brain/code", "graphify-out"],
+    "_indexed_comment": "Que entra al grafo. Se confirma con el dev la primera vez. Tipico: [\"{codigo}\", \"docs/\", \"(notas del cerebro del proyecto, fuera del repo)\"].",
+    "excluded": ["node_modules", "vendor", "wp-admin", "wp-includes", "wp-content/uploads", "wp-content/plugins", ".env", ".obsidian", "_templates", "graphify-out"],
     "_excluded_comment": "Nunca se indexa. Se declara la exclusion, no se asume. Lo que se indexa de mas AHOGA el grafo: en una prueba real unos pocos JSON de configuracion generaron 1147 de 1149 aristas.",
-    "_comment": "Lo escribe /eden:brain init. El cerebro son 3 capas: grafo de codigo (generado, desechable), vault de Obsidian (curado, se versiona) y memoria de trabajo (efimera). Ver rules/eden-brain-rules.md."
+    "_comment": "Lo escribe /eden:brain init. El cerebro son 3 capas: grafo de codigo (generado, desechable), vault de Obsidian (curado, fuera del repo del cliente) y memoria de trabajo (efimera). Ver rules/eden-brain-rules.md."
   },
 
   "preview": {
@@ -221,9 +221,17 @@
     "_comment": "true = /eden:go arranca en modo autonomo (--auto) en este proyecto: avanza en lo local y reversible, anota las dudas no bloqueantes en .claude/context/questions-{tarea}.md y solo se detiene ante lo bloqueante. El cierre (commit, push, PR, tracker) siempre espera el si del dev."
   },
 
+  "video": {
+    "mode": "ask",
+    "lang": "en",
+    "format": "vertical",
+    "accent": null,
+    "_comment": "Video explicativo al cerrar un ticket (/eden:explain-video, Paso 8b de turnoff-task). ask = turnoff-task pregunta en el reporte de cierre; off = no pregunta. accent: color de la marca del cliente para el video (null = el acento por defecto). Nunca se genera solo."
+  },
+
   "uiux": {
     "mode": "ask",
-    "_comment": "UI/UX Pro Max (dependencia externa, /eden:uiux-pro) cuando una tarea con UI no tiene Figma ni otro diseno. ask = Eden lo propone y espera el si del dev; off = nunca lo propone. No hay modo automatico."
+    "_comment": "UI/UX Pro Max (incluido en Eden en vendor/, /eden:uiux-pro) cuando una tarea con UI no tiene Figma ni otro diseno. ask = Eden lo propone y espera el si del dev; off = nunca lo propone. No hay modo automatico."
   },
 
   "security": {

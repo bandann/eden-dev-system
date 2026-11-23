@@ -16,8 +16,8 @@ otras — pero solo después de que un humano lo apruebe.
 Y dos ámbitos:
 
 ```
-~/.claude/eden-brain/               GLOBAL — vale para todos los proyectos. Se escribe CON APROBACIÓN.
-{proyecto}/.claude/brain/memory/  LOCAL  — vale para este cliente. Se escribe automáticamente.
+~/.claude/eden-brain/               GLOBAL — vale para todos los proyectos. Se escribe automáticamente (lo verificado).
+~/.claude/eden-brain/projects/{proyecto}/  PROYECTO — vale para este cliente. Se escribe automáticamente, fuera del repo.
 ```
 
 > **Las cuatro capas no cambian; cambió dónde viven.** Desde la versión 1.2.0 del kit, la memoria vive
@@ -117,8 +117,9 @@ del cliente). Entonces se **propone al dev** y espera su sí:
    Aplicaría a: todos los proyectos {Shopify/Horizon/…}
 ```
 
-**Nada llega a la memoria global sin aprobación.** Con 40+ tiendas, un caso particular promovido a regla
-general se propaga a todas — y ese es el fallo que hace inservible una memoria automática.
+**A la memoria global llega solo lo verificado**, sin esperar aprobación (el dev puede pedirla con
+`learning.global_writes: "inbox"`). Con 40+ tiendas, un caso particular promovido a regla general se
+propaga a todas: lo que se vio en un solo cliente se queda en su proyecto.
 
 ---
 

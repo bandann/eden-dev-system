@@ -32,13 +32,19 @@ def fake_install(base, version, echo="UIUX"):
 
 
 home, proj = Path(tempfile.mkdtemp()), Path(tempfile.mkdtemp())
-check("nothing installed -> None", ux.locate(proj, home) is None)
+check("nothing installed by the dev -> None", ux.installed(proj, home) is None)
+b = ux.bundled()
+check("Eden bundles UI/UX Pro Max", b is not None and b.parent.parent.name == "ui-ux-pro-max"
+      and (b.parent.parent / "LICENSE").is_file() and (b.parent.parent / "VENDORED.json").is_file())
+check("bundled copy is the default, with its pinned version", ux.locate(proj, home, prefer="bundled") == b
+      and ux.version_of(b) == json.loads((b.parent.parent / "VENDORED.json").read_text(encoding="utf-8"))["version"])
+check("installed preference without an install falls back to the bundled copy", ux.locate(proj, home, prefer="installed") == b)
 
 # Claude Code plugin install (cache/<marketplace>/ui-ux-pro-max/<version>/...), two versions
 cache = home / ".claude" / "plugins" / "cache" / "ui-ux-pro-max-skill" / "ui-ux-pro-max"
 fake_install(cache / "2.14.0", "2.14.0", "OLD")
 newest = fake_install(cache / "2.15.0", "2.15.0", "NEW")
-found = ux.locate(proj, home)
+found = ux.installed(proj, home)
 check("finds the plugin install, newest version", found == newest and ux.version_of(found) == "2.15.0")
 
 # a `uipro init` style install in another tool's skills folder is found too
@@ -46,7 +52,9 @@ other = Path(tempfile.mkdtemp())
 s = other / ".cursor" / "skills" / "ui-ux-pro-max" / "scripts"
 s.mkdir(parents=True)
 (s / "search.py").write_text("print('cursor copy')\n", encoding="utf-8")
-check("finds a skills-folder install of another tool", ux.locate(None, other) == s / "search.py")
+check("finds a skills-folder install of another tool", ux.installed(None, other) == s / "search.py")
+check("prefer installed uses the dev's newest install", ux.locate(proj, home, prefer="installed") == newest)
+check("prefer bundled ignores the dev's install", ux.locate(proj, home, prefer="bundled") == b)
 
 # --- the consent gate and the write guard
 code, out = ux.run(["x", "--design-system"], proj, approved=False, search_py=newest)
@@ -55,7 +63,6 @@ for bad in (["x", "--persist"], ["x", "--force"], ["x", "--output-dir", "/p"], [
     code, out = ux.run(bad, proj, approved=True, search_py=newest)
     check(f"refuses {bad[1]} (never writes into the project)", code == 2 and "no escribe en el proyecto" in out)
 code, out = ux.run(["x"], proj, approved=True, search_py=None)
-check("not installed: install hint, no run", code == 3 and "ui-ux-pro-max-skill" in out) if ux.locate(proj) is None else None
 
 # --- an approved run passes the args through and can save to .claude/context
 code, out = ux.run(["spa wellness", "--design-system", "-p", "Serenity"], proj, approved=True, save="Hero Spa!",
@@ -64,6 +71,19 @@ check("approved run executes the installed tool (sibling imports work)", code ==
 saved = list((proj / ".claude" / "context").glob("uiux-*-hero-spa.md"))
 check("--save writes only to .claude/context, slugged", len(saved) == 1 and "NEW spa wellness" in saved[0].read_text(encoding="utf-8"))
 check("nothing else written in the project", sorted(p.name for p in proj.iterdir()) == [".claude"])
+
+# --- the bundled copy really runs, with no network and nothing written
+code, out = ux.run(["fintech dashboard", "--domain", "style", "-n", "2"], proj, approved=True, search_py=b)
+check("bundled search runs", code == 0 and len(out) > 200)
+man = json.loads((b.parent.parent / "VENDORED.json").read_text(encoding="utf-8"))
+import hashlib
+check("bundled files match the pinned manifest", all(hashlib.sha256((b.parent.parent / f).read_bytes()).hexdigest() == h
+      for f, h in man["sha256"].items()))
+src = "\n".join(f.read_text(encoding="utf-8") for f in (b.parent).glob("*.py"))
+import re
+check("bundled scripts use no network or shell",
+      not re.search(r"^\s*(import|from)\s+(urllib(?!\.parse\b)|requests|socket|subprocess|http|ftplib|smtplib)\b", src, re.M)
+      and "os.system(" not in src and "os.popen(" not in src)
 
 # --- stack map and the project's mode
 check("stack map", ux.stack_for("react", "next") == "nextjs" and ux.stack_for("php", "laravel") == "laravel"

@@ -1,5 +1,5 @@
 {
-  "description": "Eden hooks — eden-load-rules, eden-brain-recall, eden-context-resume (session start); eden-context-watch (each prompt); eden-brain-learn-on-exit, eden-brain-learn-before-compact, eden-brain-learn-on-commit (learning); eden-commit-guard (blocks commits/pushes with secrets or an AI signature); eden-secrets-readonly (blocks reading .env, keys and credential files); eden-figma-readonly (blocks Figma writes).",
+  "description": "Eden hooks — eden-load-rules, eden-brain-recall, eden-context-resume (session start); eden-context-watch (each prompt: context watcher and brain recall); eden-brain-learn-on-exit, eden-brain-learn-before-compact, eden-brain-learn-on-commit (learning); eden-commit-guard (blocks commits/pushes with secrets or an AI signature); eden-secrets-readonly (blocks reading .env, keys and credential files); eden-figma-readonly (blocks Figma writes).",
   "hooks": {
     "SessionStart": [
       {

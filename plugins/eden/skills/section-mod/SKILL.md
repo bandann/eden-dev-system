@@ -159,6 +159,8 @@ Eso es el alcance real. Todo lo demás **no se toca**.
 **Fuente de diseño y anti-slop.** Si el cambio toca UI o textos al usuario final, lee
 `${CLAUDE_PLUGIN_ROOT}/rules/on-demand/eden-antislop-rules.md`. Sin Figma, captura, imagen ni documento
 de dirección, primero salvo que el proyecto declare `uiux.mode: off`, **propón** UI/UX Pro Max con el bloque 🎨 de `skills/uiux-pro/SKILL.md` y **espera la respuesta**; solo con un sí sigue ese skill (nunca lo corras por tu cuenta). Con un no, sigue como hasta ahora; después aplica `antislop.mode`: con `ask`, muestra el bloque 🧹 de la regla y espera la respuesta.
+
+**Animación.** Si la unidad incluye una animación que no sea una transición simple de hover o foco (un menú que se abre, un hero animado, un slider, apariciones al hacer scroll, texto animado) o toca una animación que ya existe, esa parte va al **rol `motion`** ([`teams/motion/roster.md`](../../teams/motion/roster.md), líder `/eden:motion`) y sigue [`rules/eden-motion-rules.md`](../../rules/eden-motion-rules.md): escalera de técnicas, solo `transform`/`opacity`, LCP visible, CLS 0, `prefers-reduced-motion` y tokens de movimiento. El plan declara el escalón; una librería de animación nueva es un sí aparte del dev.
 Se anota en la propuesta del Paso 6.
 
 ---

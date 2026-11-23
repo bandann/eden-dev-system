@@ -7,7 +7,7 @@ updated: "{{DATE}}"
 # 🧠 Cerebro global — Eden
 
 Lo que hemos aprendido **como equipo**, a través de todos los proyectos. Cada cliente tiene además su
-propio cerebro en `{proyecto}/.claude/brain/`.
+propio cerebro en `projects/{proyecto}/`, fuera del repo del cliente.
 
 > **Cómo se lee esto:** vista de grafo (`Ctrl+G`). Verde lo que es verdad, naranja cómo se hace, morado
 > qué pasó, azul grisáceo los proyectos.
@@ -28,7 +28,7 @@ y en ambos casos `/eden:brain promote` lo **propone** y espera el sí.
 ## Por dónde entrar
 
 - **[[working-style]]** — cómo trabaja el dev. Se carga solo al iniciar cada sesión.
-- **`inbox/`** — lo que el cerebro aprendió solo y espera tu aprobación (`/eden:brain inbox`).
+- **`inbox/`** — solo si pediste aprobar lo general (`learning.global_writes: "inbox"`): lo que espera tu sí en `/eden:brain inbox`.
 - **[[MOC-shopify]]** — lo que sabemos de Liquid, Horizon, schema, Theme Check.
 - **[[MOC-wordpress]]** — sabores, seguridad, el blast radius que incluye la base de datos.
 - **[[MOC-clientes]]** — diferencias entre clientes que **parecen iguales**. De las notas más rentables.

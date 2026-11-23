@@ -331,8 +331,17 @@ Presenta el reporte y **espera respuesta**. No commitees antes de esto.
 
 🌿 Destino del PR: {rama}  ← ⚠️ requiere tu autorización si es main/develop
 
-¿Confirmas que commiteo, pusheo y abro el PR?
+🎬 Video explicativo
+   {¿Hago un video corto (vertical, con voz) que explique este ticket? sí / no
+    | desactivado en este proyecto (video.mode: off)}
+
+¿Confirmas que commiteo, pusheo y abro el PR? (y dime si quieres el video)
 ```
+
+**El video siempre se pregunta y nunca se da por hecho.** El sí al commit no es un sí al video: son dos
+respuestas. Si el dev no dice nada del video, es un no. Con `video.mode: "off"` en
+`.claude/project-config.json` la línea dice que está desactivado y no se pregunta. Ni `/eden:go --auto` lo
+hace solo: esta pausa siempre espera al dev.
 
 ---
 
@@ -351,6 +360,27 @@ Solo con el "sí" del dev.
    - **PR contra `main` o `develop` → se pregunta al dev en el momento, aunque ya haya confirmado el
      push.** Son dos autorizaciones distintas.
    - Nunca se mergea solo.
+
+---
+
+### Paso 8b — Video explicativo (solo si el dev dijo que sí en el Paso 7)
+
+Va después del PR (para poder citarlo) y antes de cerrar en el tracker. Se carga el skill
+`skills/explain-video/SKILL.md` y se sigue desde su Paso 3, con lo que este cierre **ya tiene**: lo que pidió
+el ticket, el plan, el diff, el reporte de cierre (completitud, QA, medidas) y las URLs de preview de las
+páginas exactas del cambio. No se vuelve a investigar lo que ya está en el reporte.
+
+1. `init --name {ticket-id}` → la carpeta en `~/.claude/eden-videos/{proyecto}/{ticket-id}/` (fuera del repo).
+2. **Guion por beats y su tabla: se muestra y se espera el sí del dev**, aunque ya haya dicho que quiere el
+   video. Las cifras que salen en pantalla son las del QA, no estimaciones.
+3. Capturas de las páginas del cambio, voz y render **en segundo plano**: mientras renderiza se prepara el
+   borrador del Paso 9.
+4. Se entrega la ruta del video y de los subtítulos.
+
+**El video no va al PR ni al repo.** Si el dev quiere compartirlo: en el comentario de cierre solo con su sí,
+y adjuntarlo al ticket solo si el tracker lo permite y lo pide; si no, se le da la ruta para que lo suba él.
+Si algo falla (sin ffmpeg, sin navegador), se dice en una línea y el cierre sigue: el video no bloquea la
+entrega.
 
 ---
 

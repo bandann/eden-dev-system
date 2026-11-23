@@ -207,8 +207,7 @@ capturas se guardan en la memoria del proyecto. La próxima vez que aparece el m
 
 | Si el proyecto… | La caché vive en |
 |---|---|
-| tiene vault (`/eden:brain init`) | `{proyecto}/.claude/brain/design/` — se versiona; `shots/` no |
-| no tiene vault, pero hay cerebro global | `~/.claude/eden-brain/projects/{proyecto}/design/` |
+| tiene cerebro (lo normal) | `~/.claude/eden-brain/projects/{proyecto}/design/` |
 | no tiene ningún cerebro | `~/.claude/eden-cache/design/{proyecto}/` |
 
 Nunca se crean archivos en el repo de un cliente sin vault. Se desactiva por proyecto con
@@ -412,8 +411,10 @@ La de arriba dice **qué hay**; la del medio, **qué significa y por qué**; la 
 haciendo ahora**. Un cerebro sin la del medio es un linter caro; uno sin la de arriba es un blog.
 
 **Ámbitos** — espejan la memoria del kit: `~/.claude/eden-brain/` (global, todos los proyectos) y
-`{proyecto}/.claude/brain/` (local). Lo local se escribe solo; **lo global espera tu aprobación**, porque
-con 40+ tiendas un caso particular promovido a regla general se propaga a todas.
+`~/.claude/eden-brain/projects/{proyecto}/` (cada proyecto, fuera del repo del cliente). Los dos se escriben solos;
+al global solo llega lo verificado, porque con 40+ tiendas un caso particular promovido a regla general se propaga a
+todas. Nada del cerebro se escribe en el repo de un cliente. Un **cerebro de equipo** (`/eden:brain team`) es un repo
+git privado que el equipo comparte: todos los que trabajan en el mismo proyecto leen su carpeta `projects/{owner-repo}/`.
 
 **Aprende solo.** El plugin trae hooks de Claude Code que hacen que el cerebro crezca sin que lo
 pidas:
@@ -421,19 +422,21 @@ pidas:
 | Cuándo | Qué pasa |
 |---|---|
 | **Al iniciar una sesión** | Se carga tu forma de trabajar, el índice del conocimiento global y el del proyecto, y cuántas propuestas esperan aprobación |
+| **En cada mensaje que envías** | Se añaden, resumidas, las notas relacionadas (hasta 3, solo del proyecto y del conocimiento general, nunca de otro cliente; no en un «ok»; sin repetir en 20 mensajes). `/eden:brain recall search "…"` muestra qué saldría para un mensaje |
 | **Antes de cada `git commit` / `git push`** que ejecuta Claude | Se destila lo trabajado hasta ese momento y se actualiza la nota de la rama (qué se hizo, decisiones, pendientes) |
 | **Al cerrar la sesión o antes de compactar** | Se destila el resto de la sesión: correcciones, preferencias, decisiones, gotchas, procedimientos |
 
 El destilador corre en segundo plano (`claude -p` con Sonnet en `--safe-mode` por defecto, o el proveedor que dejó `/eden:setup ai`) y nunca bloquea
-nada. Lo del proyecto se escribe directo; lo general (tu forma de trabajar, hechos de una plataforma)
-espera en `~/.claude/eden-brain/inbox/` hasta que lo apruebes con `/eden:brain inbox`. Estado y control:
+nada. Lo del proyecto se escribe directo, y también lo general (tu forma de trabajar, hechos de una plataforma)
+cuando la sesión lo verificó o tú lo dijiste: sin paso de aprobación. Con `learning.global_writes: "inbox"` en
+`~/.claude/eden-config.json`, lo general vuelve a esperar tu sí en `/eden:brain inbox`. Estado y control:
 `/eden:brain learn` (`on`, `off`, `now`, `model`). Requiere el CLI `claude` con sesión iniciada
 (`claude auth login`). Detalle en `rules/eden-brain-rules.md` § Aprendizaje automático.
 
 ![Cómo aprende el cerebro](images/brain-learning.svg)
 
 **Cómo escribe.** El destilador **solo lee**: devuelve cada nota en un bloque `=== EDEN NOTE ===` y el
-script las valida (solo el cerebro del proyecto o la bandeja, sin `..` ni rutas absolutas), manda a
+script las valida (solo el cerebro del proyecto y `semantic/`, `procedural/` y `me/working-style.md` del global, sin `..` ni rutas absolutas), manda a
 cuarentena la que lleve un secreto y escribe el resto. **Una sesión solo sale de la cola cuando sus notas
 se escribieron de verdad.** Las sesiones largas se parten en tramos, y una sesión abierta en un worktree
 aprende en el repo principal. Si se perdió algo, `eden_brain.py requeue {transcript}` la vuelve a encolar.
@@ -1032,6 +1035,16 @@ precios gestionados por defecto; Shopify Scripts retirados (sus casos van a Func
 
 | Versión | Qué trajo |
 |---|---|
+| **4.1.0** | **Versión estable de la línea 4.1** (beta.1 a beta.9, probadas): el cerebro guarda solo lo general, trae las notas relacionadas en cada mensaje y se puede compartir como cerebro de equipo, y nunca escribe en los repos de clientes; UI/UX Pro Max incluido; `/eden:explain-video` (beats verticales, subtítulos cinéticos, voz en off, preguntado en `turnoff-task`); equipo de animación `/eden:motion` + `/eden:motion-audit` con reglas, patrones y medición en el navegador |
+| **4.1.0-beta.9** | Equipo de animación, fase 2 — medir: `/eden:motion-audit` y el agente `motion-perf-auditor`; `scripts/eden_motion.py lint` (análisis estático: `transition: all`, propiedades de layout en transiciones y keyframes, listeners de scroll, listeners no pasivos, leer y escribir layout en el mismo cuadro, animar con `setInterval`, `will-change` permanente o global, sin movimiento reducido, GSAP sin limpieza, autoplay sin pausa, contenido oculto hasta el JS; `--changed` para un diff), `measure` (Chrome/Edge headless con scroll, hover, clic o tecla, en móvil, con CPU ralentizada y movimiento reducido: fps, cuadros lentos, tareas largas, layouts, CLS al animar, input más lento, LCP y las propiedades que de verdad se animan, contra el presupuesto) y `compare` (tabla antes → después); el control de Chrome se comparte con el renderizador de videos (`scripts/lib/cdp.mjs`) |
+| **4.1.0-beta.8** | Equipo de animación, fase 1: `/eden:motion` (create · modify · optimize · audit) lidera a `motion-architect` (inventario, auditoría y decisión de técnica, solo lectura) y `motion-dev` (implementa); nuevo `rules/eden-motion-rules.md` (escalera CSS → ligado al scroll / View Transitions → Web Animations → librería con el sí del dev; solo `transform`/`opacity`, sin layout por cuadro, LCP visible, CLS 0, INP, movimiento reducido, WCAG 2.2.2/2.3.1, tokens de movimiento); patrones de menús, heros, sliders, secciones y textos; nuevo rol `motion`; ignition-task, create-new-section, section-mod y `/eden:go` pasan el trabajo de animación al equipo |
+| **4.1.0-beta.7** | `turnoff-task` pregunta en el reporte de cierre si se hace un video explicativo (`video.mode: ask` por defecto, `off` para no preguntar nunca); el sí al commit no es un sí al video. Con un sí, el paso 8b corre `/eden:explain-video` después del PR y antes del tracker, con lo que ya tiene el reporte de cierre; la tabla de beats se aprueba igual, el render va en segundo plano, el video nunca va al PR ni al repo y compartirlo se pregunta aparte; si falla, no bloquea la entrega |
+| **4.1.0-beta.6** | Voz en off de `/eden:explain-video` (fase 2): `eden_video.py voice` narra cada beat por separado (`scripts/eden_voice.py`: voz del sistema, Kokoro, OpenAI o ElevenLabs; `auto` nunca elige una API de pago), así cada beat dura exactamente lo que se dice y los subtítulos van con la voz; solo se vuelven a narrar las líneas editadas; Kokoro corre en su propio entorno de Python 3.12 (`eden_voice.py setup-kokoro`, con versiones que Windows Smart App Control deja cargar); `render` une la voz al video con un ffmpeg completo, o deja `voice.wav` y un `preview.html` que los reproduce juntos cuando solo está el ffmpeg de Playwright (sin audio) |
+| **4.1.0-beta.5** | Nuevo `/eden:explain-video` (fase 1): un video corto vertical (9:16) de motion graphics que explica un ticket terminado. El guion es una lista de beats —una cosa que se dice y una acción visual cada uno— a partir del ticket, el plan, el diff y el QA, se muestra como tabla y el dev lo aprueba antes; subtítulos cinéticos de 4 palabras como máximo; los actores con la misma clave persisten y se transforman entre beats; magnitudes como contadores y barras; capturas reales en marco de navegador o teléfono con cortina antes/después y marcas; diff y caja de prompt escribiéndose; un solo color de acento; renderiza cuadro a cuadro con Chrome/Edge y ffmpeg (`scripts/video/render.mjs`, Node 22+, sin paquetes de npm) con subtítulos SRT/VTT y un fotograma de portada. Sale en `~/.claude/eden-videos/{proyecto}/{nombre}/`, nunca en el repo del cliente; publicarlo se pregunta aparte. La voz en off es la fase 2 y la pregunta en `turnoff-task`, la fase 3 |
+| **4.1.0-beta.4** | UI/UX Pro Max viene dentro de Eden: el skill `ui-ux-pro-max` (MIT, Next Level Builder) fijado a upstream 2.15.0 (`e59ff37`) en `vendor/ui-ux-pro-max/`, con su licencia y un manifiesto con checksums; no hay que instalar nada. `uiux.source: "installed"` usa la instalación propia del dev si es más nueva; `eden_uiux.py vendor-update` refresca la copia (quien mantiene Eden). Sigue corriendo solo con el sí del dev |
+| **4.1.0-beta.3** | Cerebro de equipo, fase 1: un repo git privado que el equipo comparte junto al cerebro personal de cada uno (`/eden:brain team join|init|link|status|pull|doctor|leave`, `scripts/eden_team.py`); un proyecto está en el equipo si el clon tiene `projects/{owner-repo}/`, así que todos los de ese repo caen en la misma carpeta; al iniciar sesión se listan las notas del equipo y se hace pull en segundo plano (cada 10 min como mucho); el recall también busca en ellas; tu forma de trabajar y tus notas personales nunca van al equipo. Ya no se escribe nada personal en los repos de clientes: el cerebro del proyecto, el grafo exportado y la caché de diseño viven en `~/.claude/eden-brain/projects/{proyecto}/`; un `.claude/brain/` antiguo se avisa y `/eden:brain migrate-vault` lo copia fuera |
+| **4.1.0-beta.2** | Recall del cerebro en cada mensaje: un índice SQLite FTS5 desechable de las notas (`.state/recall.db`) se busca con las palabras del mensaje y se añaden hasta 3 notas relacionadas, resumidas, en 3.000 caracteres; solo del proyecto y del conocimiento general, nunca de otro cliente; sin buscar en mensajes triviales; sin repetir una nota en 20 mensajes; sin notas reemplazadas; `/eden:brain recall` (`status`, `search`, `index`, `on`/`off`); unos 10 ms, sin llamar a un modelo |
+| **4.1.0-beta.1** | El cerebro guarda solo lo general: tu forma de trabajar va a `me/working-style.md` y los hechos verificados de una plataforma a `semantic/`/`procedural/`, sin aprobar en la bandeja (`learning.global_writes: "inbox"` la recupera); al global solo llega lo verificado (`confidence: alta`); cada sesión busca en el cerebro antes de planear y carga un índice más grande |
 | **4.0.0** | **Versión estable de la línea 4.0** (beta.1 a beta.7, probadas): cualquier herramienta, modelo y proveedor de IA; hooks en todas las herramientas; lectura de secretos bloqueada; delegación proporcional; una sola tabla de herramientas; sello de revisión en el push; revisión doble a ciegas opcional; instalaciones seguras (`hosts doctor`/`sync`); revisión de IA antes del commit, opt-in; cerebro identificado por el remoto de git, con temas deduplicados y compartido por Claude Code, Codex y OpenCode; UI/UX Pro Max (consultando antes); `w2shopify`; `/eden:go` como orquestador (Fable planea, Opus y Sonnet construyen) con `--auto`; SMG Hub por el conector de claude.ai, sin plugins SMG |
 | **4.0.0-beta.7** | **`/eden:go` orquesta**: tres niveles de modelo — `plan` (Fable en Claude: la sesión de `/eden:go` entiende, encadena los skills, planea, reparte y verifica), `strong` (Opus, unidades complejas) y `fast` (Sonnet, unidades acotadas), con el modelo elegido en cada encargo según la complejidad. **Modo autónomo `/eden:go --auto`** (opt-in por tarea, o `go.auto_default`): recorre la cadena de skills, toma el supuesto más reversible ante las preguntas no bloqueantes y las anota en `.claude/context/questions-{tarea}.md` sin detenerse, y solo para ante las bloqueantes (commit/push/PR, tracker, borrar, dependencias, tienda, seguridad, contradicciones de alcance, derechos de diseño, UI/UX Pro Max); `/eden:go answers` aplica las respuestas y rehace solo lo que dependía de ellas; el cierre siempre se detiene en la confirmación de `turnoff-task` con los supuestos abiertos a la vista |
 | **4.0.0-beta.6** | **Un solo cerebro también en OpenCode**: el plugin de OpenCode ahora agrega lo que sabe el cerebro al iniciar la sesión (el mismo `eden_brain.py start` de las demás herramientas) y, cuando la sesión queda en espera, guarda su diálogo como JSONL `{role, content}` —con las llamadas a herramientas— y lo encola con `eden_brain.py learn`, así las sesiones de OpenCode se destilan en el cerebro compartido con el proveedor de `eden-config.json` (por ejemplo, un modelo local de LM Studio) |

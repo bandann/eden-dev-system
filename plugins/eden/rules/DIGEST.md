@@ -24,6 +24,9 @@ proyecto mandan sobre este resumen.
 - **Figma manda y se mide, no se estima.** Sin diseño, se *propone* UI/UX Pro Max y se espera el sí. Una diferencia entre breakpoints es un requerimiento.
   Tokens del proyecto siempre: nunca un hex, un px de tipografía ni un `font-family` sueltos.
   → `eden-design-rules.md`
+- **Animación**: la técnica más liviana que funcione (CSS → scroll-driven/View Transitions → Web
+  Animations → librería con el sí del dev); solo `transform`/`opacity`, LCP visible, CLS 0,
+  `prefers-reduced-motion` y tokens de movimiento. Equipo `/eden:motion`. → `eden-motion-rules.md`
 - **El modelo principal decide, el ejecutor ejecuta**, y se delega solo con un motivo (lectura grande, paralelo, verificador independiente, contexto lleno); lo pequeño lo hace la sesión. Encargo de cinco partes
   (qué, dónde, con qué, acepta cuando, qué NO). El reporte de un agente es una afirmación: se verifica.
   → `eden-model-strategy-rules.md` · `eden-team-rules.md` (roles → `teams/{stack}/roster.md`)
@@ -72,9 +75,9 @@ proyecto mandan sobre este resumen.
   → `eden-tracker-rules.md`
 
 ## Memoria y cerebro (opcionales)
-- Si existe `~/.claude/eden-brain/`, se consulta al arrancar y se consolida al cerrar. Lo del proyecto
-  se escribe solo; **lo general espera aprobación** (`/eden:brain inbox`). Sin cerebro, todo funciona
-  igual. Nunca secretos ni datos personales en memoria. → `eden-memory-rules.md` · `eden-brain-rules.md`
+- Si existe `~/.claude/eden-brain/`, **se consulta antes de cada tarea** (y en cada mensaje, el recall añade las notas relacionadas) y se consolida al cerrar. Lo del
+  proyecto y lo general verificado **se guardan solos, sin preguntar** (`learning.global_writes: "inbox"`
+  vuelve a pedir aprobación). Nada del cerebro se escribe en el repo del cliente; el cerebro de equipo (`/eden:brain team`) es un repo aparte. Sin cerebro, todo funciona igual. Nunca secretos ni datos personales en memoria. → `eden-memory-rules.md` · `eden-brain-rules.md`
 - Perfiles de operación: `eden-profiles-rules.md`.
 
 ## Honestidad

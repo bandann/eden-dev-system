@@ -53,8 +53,8 @@ action: create
 ```
 
 - `target: project` → `path` es **relativo al cerebro del proyecto** (ruta abajo).
-  `target: inbox` → `path` es solo el nombre del archivo, plano, dentro de `{cerebro global}/inbox/`
-  (`AAAA-MM-DD-kebab-case.md`, sin subcarpetas).
+  `target: global` → `path` es relativo al cerebro global y solo puede ser `semantic/{nombre}.md`,
+  `procedural/{nombre}.md` o `me/working-style.md` (sin más subcarpetas).
 - `action: create` para una nota nueva; `action: update` para una existente — y entonces el bloque
   lleva **el archivo entero ya actualizado** (lee el actual con Read y conserva lo que no cambia), nunca
   un fragmento ni un diff.
@@ -69,11 +69,12 @@ action: create
 | Qué es | Dónde | Cómo |
 |---|---|---|
 | Algo de **este proyecto** (decisión, gotcha local, hecho del cliente, procedimiento propio) | `target: project` | Si es un **vault local**: `memory/semantic/`, `memory/episodic/`, `memory/procedural/` o `decisions/` según el tipo. Si es la **carpeta del proyecto en el global**: `semantic/`, `episodic/`, `procedural/` o `decisions/` |
-| **Forma de trabajar del dev** (preferencias, correcciones de estilo) | `target: inbox` | Propuesta para aprobar, `kind: working-style` |
-| **Hecho general** de una plataforma o herramienta (Shopify, WordPress, Playwright, Figma…) que serviría en cualquier proyecto | `target: inbox` | Propuesta para aprobar, `kind: semantic` o `procedural` |
+| **Forma de trabajar del dev** (preferencias, correcciones de estilo) | `target: global`, `path: me/working-style.md` | `action: update` con **el archivo entero**: una viñeta nueva en su sección (`- {preferencia} · {fecha} · [[{proyecto}]]`), o la existente mejorada si ya dice algo parecido |
+| **Hecho general** de una plataforma o herramienta (Shopify, WordPress, Playwright, Figma…) que serviría en cualquier proyecto | `target: global`, `path: semantic/…` o `procedural/…` | Nota normal, `confidence: alta`. Si no está verificado, va al proyecto o no se escribe |
 
-**No hay otro destino**: lo que es del global aprobado (`semantic/`, `procedural/`, `episodic/`, `me/`)
-solo se propone en la bandeja; lo aprueba el dev.
+**No hay otro destino.** Lo general se escribe directo, sin esperar al dev: por eso solo entra lo que la
+sesión **verificó** o el dev **dijo** (`confidence: alta`), y un caso de un solo cliente se queda en
+su proyecto aunque parezca general.
 
 ## Cuando el disparador es un commit o un push
 
@@ -94,23 +95,20 @@ o `episodic/{rama-en-kebab-case}.md` dentro de la carpeta del proyecto en el glo
 
 ## Antes de escribir: buscar lo que ya existe
 
-Para cada aprendizaje, busca primero con Grep/Glob en el cerebro del proyecto, en el cerebro global
-(`semantic/`, `procedural/`, `me/`) y en `inbox/`:
+Para cada aprendizaje, busca primero con Grep/Glob en el cerebro del proyecto y en el cerebro global
+(`semantic/`, `procedural/`, `me/`):
 
 - **Ya existe y dice lo mismo** → no lo dupliques. Si la sesión lo vuelve a confirmar, actualiza su
-  línea de verificación (fecha y dónde) — solo si la nota está en el cerebro del proyecto o en la
-  bandeja; si está en el global aprobado, crea en la bandeja una propuesta `action: confirm` que la
-  enlace.
-- **Existe pero la sesión lo contradice o lo amplía** → en el proyecto, edítala y deja constancia del
-  cambio; en el global, propuesta en la bandeja con `action: update` y el `[[enlace]]` a la nota.
+  línea de verificación (fecha y dónde), esté en el proyecto o en el global.
+- **Existe pero la sesión lo contradice o lo amplía** → edítala (`action: update`, archivo entero) y
+  deja constancia del cambio, esté donde esté. Una corrección del dev gana a la nota.
 - **No existe** → nota nueva.
-- **Está en `inbox/_rejected/`** → el dev ya la descartó: no la vuelvas a proponer, salvo que esta
+- **Está en `inbox/_rejected/`** → el dev ya la descartó: no la vuelvas a escribir, salvo que esta
   sesión traiga una corrección explícita suya que la contradiga.
 
 ## Formato de una nota
 
-Nombre de archivo: `kebab-case-descriptivo.md` (sin fecha en el nombre; en la bandeja, prefijo
-`AAAA-MM-DD-`). **Notes are written in English** (titles, body, tags), like everything the kit writes;
+Nombre de archivo: `kebab-case-descriptivo.md` (sin fecha en el nombre). **Notes are written in English** (titles, body, tags), like everything the kit writes;
 quote the dev's own words verbatim in their original language. Short sentences, assertions — no narrative.
 
 ```markdown
@@ -139,10 +137,6 @@ Related: [[{nota relacionada}]] [[{MOC que corresponda}]]
 **`topic:`** es la clave del tema, no del archivo: dos notas sobre lo mismo llevan el mismo
 `topic`, y si ya existe una nota con ese `topic` la tuya la **actualiza** aunque elijas otro nombre de
 archivo (el script la redirige). Usa el `topic` de la nota que ya existe cuando amplíes un tema.
-
-En la **bandeja** añade al frontmatter `kind:` (`working-style`, `semantic`, `procedural`) y
-`action:` (`new`, `update`, `confirm`), y una línea `**Proposal:**` al principio del cuerpo que diga
-en una frase qué se aprueba.
 
 `confidence: alta` solo si la sesión lo verificó (salida real, el dev lo confirmó, se probó). Lo
 demás es `media`. Lo que sería `baja`, no se escribe.

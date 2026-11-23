@@ -59,6 +59,7 @@ Del `$ARGUMENTS` saca:
 | **Seguridad** | "revisa la seguridad", "audita", "¿es seguro?", "blinda", "secretos", "vulnerabilidades" | `security-check` y su modo (`diff`, `section`, `project`, `secrets`, `deps`); informe delegable a `eden:router-qa` |
 | **Anti-slop** | "slop", "se ve genérico", "parece hecho por IA", "revisa los textos/copy", "comentarios de IA", "contraste" | `antislop` y su modo (`section`, `page`, `copy`, `code`, `contrast`); informe delegable a `eden:router-qa` |
 | **Dirección visual sin diseño** | "no hay Figma", "propón un diseño", "mejora el diseño", "qué estilo/paleta/tipografía uso", "UI/UX Pro Max" | `uiux-pro` — se **propone** y se ejecuta solo con el sí del dev (nunca en modo informe por agente: necesita consultarle) |
+| **Animación** | "anima", "animación del menú/hero/slider", "aparezca al hacer scroll", "texto animado", "optimiza las animaciones", "va lento/se traba al hacer scroll", "GSAP" | `motion` (`create` · `modify` · `optimize` · `audit`) — líder del equipo de animación; `motion-audit` para solo medir; plan aprobado antes de escribir y una librería nueva es un sí aparte |
 | **Duplicar un sitio en Shopify** | "copia/duplica este sitio en Shopify", "pasa esta web a Shopify", "clona el diseño de esta URL", "w2shopify" | `w2shopify <url…>` — primero confirma el derecho a reproducir el diseño; mide con Playwright y reconstruye en el tema |
 
 Si `$ARGUMENTS` está vacío, muestra el mapa corto de familias (la tabla del Paso 3 resumida en una

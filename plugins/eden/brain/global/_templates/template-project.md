@@ -21,7 +21,7 @@ tags: []
 ## Dónde está
 
 - **Repo:** `{ruta}`
-- **Cerebro local:** `{ruta}/.claude/brain/`
+- **Cerebro del proyecto:** `~/.claude/eden-brain/projects/{proyecto}/` (y el del equipo, si lo hay)
 - **Stack:** {shopify | wordpress + sabor}
 
 ## Lo que hay que saber antes de tocarlo
