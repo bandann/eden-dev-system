@@ -40,7 +40,8 @@ pasada posterior.
 - Todo input tiene su `<label>` asociado.
 - ARIA solo cuando la semántica nativa no alcanza (`<details>`, `<dialog>` primero). Widgets propios con
   `aria-expanded`/`aria-controls`/`aria-label`; actualizaciones dinámicas con `aria-live`.
-- `prefers-reduced-motion` respetado en toda animación.
+- `prefers-reduced-motion` respetado en toda animación. Todo lo demás de movimiento (técnica, rendimiento,
+  tokens, accesibilidad): `eden-motion-rules.md`.
 - Estados de foco, hover, disabled, carga y vacío existen y están diseñados.
 
 ## SEO

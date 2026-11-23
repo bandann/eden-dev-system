@@ -34,19 +34,28 @@ eso lo generado se ignora en git.
 ## Los dos ámbitos — espejan la memoria del kit
 
 ```
-~/.claude/eden-brain/               CEREBRO GLOBAL — vale para todos los proyectos
-└── (curado, sin código: lo que aprendimos como equipo)
+~/.claude/eden-brain/                       CEREBRO PERSONAL
+├── me/ semantic/ procedural/               lo general (tu forma de trabajar, hechos de plataforma)
+└── projects/{proyecto}/                    lo de cada cliente (curado) + code/ (Graphify) + design/
 
-{proyecto}/.claude/brain/         CEREBRO LOCAL — de este cliente
-├── (curado: memoria, decisiones, diseño de este proyecto)
-└── code/                         (generado por Graphify — el grafo de ESTE repo)
+~/.claude/eden-teams/{equipo}/              CEREBRO DE EQUIPO (opcional, repo git privado compartido)
+└── projects/{proyecto}/                    lo que el equipo sabe de ese proyecto
 ```
+
+**Nada personal se escribe en el repo del cliente**: ni notas, ni grafo exportado, ni caché de diseño.
+Lo que Graphify deja en el repo (`graphify-out/`) se ignora en `.git/info/exclude`, nunca en el
+`.gitignore` del cliente. Un `.claude/brain/` de versiones anteriores se avisa y se migra con
+`/eden:brain migrate-vault`.
 
 Misma precedencia y misma disciplina que `eden-memory-rules.md`:
 
-- **Lo local se escribe solo.** Es de este cliente y no sale de aquí.
-- **Lo global espera la aprobación del dev.** Con 40+ tiendas, un caso particular promovido a regla
-  general se propaga a todas — ese es el fallo que hace inservible una memoria automática.
+- **Lo del proyecto se escribe solo**, en su carpeta del cerebro personal (y, si el proyecto está en un
+  equipo, el equipo lo lee de `~/.claude/eden-teams/`). Es de ese cliente: el recall nunca lo lleva a la
+  sesión de otro proyecto.
+- **Lo global también se escribe solo**, pero solo lo verificado o dicho por el dev (`confidence: alta`).
+  Con 40+ tiendas, un caso particular promovido a regla general se propaga a todas: lo que es de un solo
+  cliente se queda en su proyecto. El dev puede volver a aprobar cada nota con
+  `learning.global_writes: "inbox"`.
 - **El cerebro global no contiene código de clientes.** Contiene hechos, procedimientos y patrones. Si
   una nota global necesita citar código, cita el **proyecto y la ruta**, no el contenido.
 
@@ -149,7 +158,8 @@ Además de lo que se escribe a mano, el cerebro **aprende solo**, con los hooks 
 
 | Hook | Qué hace | Coste |
 |---|---|---|
-| **SessionStart** | Carga en el contexto de la sesión nueva tu forma de trabajar (`me/working-style.md`), el índice del conocimiento global y el del proyecto actual, y cuántas propuestas esperan en la bandeja | Ninguno: solo lee archivos |
+| **SessionStart** | Carga en el contexto de la sesión nueva tu forma de trabajar (`me/working-style.md`), el índice del conocimiento global y el del proyecto actual, y la orden de buscar en el cerebro antes de planear | Ninguno: solo lee archivos |
+| **UserPromptSubmit** | **Recall en cada mensaje** (`hooks/eden_recall.py`, dentro de `eden-context-watch`): busca con las palabras del mensaje en un índice SQLite FTS5 de las notas (`.state/recall.db`, desechable) y añade hasta 3 notas relacionadas, resumidas, en 3.000 caracteres. Solo del proyecto actual y de `semantic/`/`procedural/` del global: **nunca de otro cliente**. No busca en un «ok» o «dale», no repite una nota en 20 mensajes y salta las marcadas `status: superseded`. Se ajusta con `recall` en `eden-config.json` | ~10 ms, sin modelo |
 | **SessionEnd** y **PreCompact** | Condensa la parte nueva de la conversación, la deja en `.state/queue/` y lanza en segundo plano el **destilador** (`claude -p`, modelo `learning.model`, en `--safe-mode`). También corre `graphify update` si el proyecto tiene grafo | Una llamada al modelo por sesión con trabajo real |
 
 El destilador sigue `hooks/distill-prompt.md`: busca correcciones del dev, preferencias, decisiones con su
@@ -159,19 +169,25 @@ enlazadas con `source: auto`, `session` y `confidence`. Las sesiones triviales (
 
 **El modelo propone, el código escribe.** El destilador solo lee: devuelve cada nota en un bloque
 `=== EDEN NOTE ===` y termina con `=== EDEN RESULT: … ===`. `eden_brain.py` valida cada destino y ruta
-(solo el cerebro del proyecto o la bandeja, nada de `..` ni rutas absolutas), revisa secretos y escribe.
+(solo el cerebro del proyecto, `semantic/`, `procedural/` y `me/working-style.md` del global, nada de
+`..` ni rutas absolutas), revisa secretos y escribe.
 **Una sesión solo sale de la cola cuando sus notas se escribieron**: un código de salida 0 sin bloque de
 resultado no cuenta como éxito. Las sesiones largas se parten en tramos de `learning.max_condensed_chars`
 en vez de perder su parte media, y una sesión en un worktree aprende en el repo principal.
 
 **Dónde escribe — la regla de los dos ámbitos se mantiene:**
 
-- **Lo del proyecto, directo.** Al vault local (`{proyecto}/.claude/brain/`) si existe; si el proyecto no
-  tiene vault, a `~/.claude/eden-brain/projects/{proyecto}/` — **nunca crea archivos en el repo de un
-  cliente sin que el dev haya hecho `/eden:brain init`**.
-- **Lo general, a la bandeja.** Tu forma de trabajar y los hechos de una plataforma van a
-  `~/.claude/eden-brain/inbox/` y esperan tu sí en `/eden:brain inbox`. El destilador **no puede escribir**
-  en `semantic/`, `procedural/`, `episodic/` ni `me/` del global: la aprobación sigue siendo humana.
+- **Lo del proyecto, directo** a `~/.claude/eden-brain/projects/{proyecto}/`. **Nunca crea archivos en el
+  repo de un cliente.**
+- **Lo general, directo al global.** Tu forma de trabajar va a `me/working-style.md` y los hechos de
+  una plataforma a `semantic/` o `procedural/`, sin preguntar. Solo entra lo verificado o dicho por el
+  dev; lo de un solo cliente se queda en su proyecto. Una nota que resulte falsa se corrige o se borra a
+  mano. Con `learning.global_writes: "inbox"` en `eden-config.json`, lo general vuelve a esperar tu sí en
+  `/eden:brain inbox`.
+
+**Úsalo en cada tarea.** Al arrancar, la sesión recibe el índice del cerebro; antes de planear o tocar
+algo, busca en él (Grep por el tema, la herramienta o el error) y lee lo que aplique. Lo que aprenda se
+guarda solo al cerrar: recordar no necesita permiso.
 
 Lo aprendido automáticamente es **memoria, no verdad**: la sesión que lo lee lo trata como contexto, lo
 verifica contra el repo antes de decidir con él y, si resulta falso, se corrige o se borra. Se apaga con
@@ -209,7 +225,7 @@ caduca y se avisa.
 
 | Regla | Qué cambia |
 |---|---|
-| `eden-memory-rules.md` | Las cuatro capas **no cambian**. Cambia dónde viven: la memoria local pasa a `{proyecto}/.claude/brain/memory/`, dentro del vault, para que sea navegable y enlazable. `/eden:brain init` migra lo que hubiera. |
+| `eden-memory-rules.md` | Las cuatro capas **no cambian**. Cambia dónde viven: la memoria del proyecto pasa a `~/.claude/eden-brain/projects/{proyecto}/`, fuera del repo, navegable y enlazable. `/eden:brain migrate-vault` copia lo que hubiera en un `.claude/brain/` antiguo. |
 | `eden-context-rules.md` | Consultar el grafo pasa a ser **el primer intento** antes de delegar una lectura grande. La regla de "punteros, no contenido" se cumple sola: una consulta al grafo devuelve un puntero. |
 | `eden-component-strategy-rules.md` | `graphify affected` se suma como fuente de blast radius. No sustituye al grep. |
 | `eden-model-strategy-rules.md` | Sin cambios: consultar el grafo es traer datos, así que lo hacen los agentes o el skill, y el orquestador recibe la conclusión. |

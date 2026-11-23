@@ -89,7 +89,7 @@ también.
 ## Sin diseño de referencia: UI/UX Pro Max, siempre con consulta
 
 Cuando una tarea con UI no tiene Figma, captura ni documento de dirección visual, Eden **propone** usar
-UI/UX Pro Max (dependencia externa, `skills/uiux-pro/SKILL.md`) para sugerir patrón, estilo, paleta,
+UI/UX Pro Max (incluido en Eden, `skills/uiux-pro/SKILL.md`) para sugerir patrón, estilo, paleta,
 tipografía y reglas de UX — y **espera el sí del dev**. Nunca corre en automático; `uiux.mode: off` en
 `.claude/project-config.json` hace que ni se proponga. Lo que sugiere es una **propuesta**, no una fuente:
 Figma manda, los tokens del proyecto mandan sobre su paleta y tipografía, y las reglas de Eden (WCAG AA,

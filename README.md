@@ -9,12 +9,29 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-4.0.0-15803d">
+  <img alt="version" src="https://img.shields.io/badge/version-4.1.0-15803d">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-15803d">
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude%20Code-plugin-1d4ed8">
   <img alt="stacks" src="https://img.shields.io/badge/stacks-Shopify%20%7C%20WordPress%20%7C%20React%20%7C%20PHP%20%7C%20Node%20%7C%20Mobile-6d28d9">
   <img alt="trackers" src="https://img.shields.io/badge/trackers-Asana%20%7C%20SMG%20Hub%20%7C%20ClickUp-b45309">
 </p>
+
+<table><tr><td>
+
+## 🆕 What's new in Eden 4.1
+
+**Update:** `claude plugin marketplace update eden-kit` · `claude plugin update eden@eden-kit` · then `/reload-plugins` in Claude Code.
+
+| | New | What it does for you |
+|---|---|---|
+| 🎞️ | **Animation team** — `/eden:motion` · `/eden:motion-audit` | Creates, modifies and **optimizes** animations for menus, heroes, sliders, sections and text. CSS first (transitions, `@starting-style`, scroll-driven animations, View Transitions), then the Web Animations API, and GSAP / Motion / Lottie / Embla only with your yes. Only `transform`/`opacity`, LCP visible, CLS 0, `prefers-reduced-motion` always. **Measures in a real browser** (fps, slow frames, long tasks, layout work, CLS, input) and gives you a before → after table |
+| 🎬 | **Explain videos** — `/eden:explain-video` | A short **vertical video with voice-over** that explains a finished ticket: a beats script you approve, real screenshots, animated code and numbers, kinetic captions, subtitles. `turnoff-task` asks if you want one when you close a ticket |
+| 🧠 | **The brain remembers on its own** | What you teach it is saved without asking; on **every message** it brings up the related notes; a **team brain** (`/eden:brain team`) shares what the team knows per project; and **nothing of the brain is written into client repos** anymore |
+| 🎨 | **UI/UX Pro Max included** — `/eden:uiux-pro` | Design direction when there is no Figma, bundled inside Eden: nothing to install. Still runs only with your yes |
+
+Videos need **ffmpeg** (`winget install Gyan.FFmpeg` / `brew install ffmpeg`); a natural voice is optional (`eden_voice.py setup-kokoro`). Full list: [version history](docs/guide.md#version-history).
+
+</td></tr></table>
 
 **Eden** is a [Claude Code](https://claude.com/claude-code) plugin that turns a ticket into a finished,
 reviewed pull request: it reads the ticket, **measures** the Figma design, plans with you, delegates the
@@ -29,6 +46,7 @@ in your tracker. It works for **any company, client and project**.
 
 ## Contents
 
+- [🆕 What's new in Eden 4.1](#-whats-new-in-eden-41)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Quick start](#quick-start)
@@ -55,7 +73,7 @@ in your tracker. It works for **any company, client and project**.
 | **Your tracker's MCP** (Asana, SMG Hub or ClickUp) | For ticket work | Reading tickets, the closing comment, time | `/eden:setup status` |
 | `gitleaks`, `semgrep`, `osv-scanner` | Optional | Extra security scanners; Eden says what it could not check without them | `/eden:setup status` |
 | **Obsidian** | Optional | Browsing the brain's notes | — |
-| **[UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)** | Optional | Design direction (style, palette, type, UX rules) when a task has no Figma — Eden proposes it and runs it only with your yes | `/eden:setup status` |
+| **[UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)** | Included (MIT, in `vendor/`) | Design direction (style, palette, type, UX rules) when a task has no Figma — Eden proposes it and runs it only with your yes. Nothing to install | `/eden:uiux-pro status` |
 | **Your stack's tools** (Shopify CLI, PHP + Composer, WP-CLI, Xcode / Android SDK…) | Per project | Each stack's `*-setup` command checks them and installs only with your yes | `/eden:shopify-setup`, `/eden:wp-setup`… |
 
 > **macOS / Linux: `python` must exist.** The hooks call `python`, and many systems only ship `python3`.
@@ -212,9 +230,9 @@ All commands are `/eden:<name>`. The full description of each one is in the [gui
 | Area | Commands |
 |---|---|
 | **Start** | `go` — the router · `shopify` — Shopify team lead · `setup` — install status, rules, brain, config |
-| **Task cycle** | `ignition-task` · `turnoff-task` · `estimate-time` · `time-report` · `mydaily` |
+| **Task cycle** | `ignition-task` · `turnoff-task` · `estimate-time` · `time-report` · `mydaily` · `explain-video` (a short vertical motion-graphics video that explains a finished ticket: beats you approve, kinetic captions, real screenshots, animated code and numbers) |
 | **Project base** | `shopify-setup` · `create-fundaments` (design system from Figma) · `create-sitemap` (pages ↔ Figma nodes) |
-| **Build** | `create-new-section` · `section-mod` · `figma-expert` · `download-figma-img` · `uiux-pro` (design direction without Figma, asked first) · `w2shopify` (a live site's design → Shopify theme) |
+| **Build** | `create-new-section` · `section-mod` · `figma-expert` · `download-figma-img` · `uiux-pro` (design direction without Figma, asked first) · `motion` (animation team: menus, heroes, sliders, sections, text; CSS first, libraries with your yes; optimizes existing animations) · `motion-audit` (measures animations in a real browser: fps, slow frames, layout work, CLS, input; before → after) · `w2shopify` (a live site's design → Shopify theme) |
 | **QA & tests** | `attention-detail` · `qa-pixel-perfect` · `test-visual` · `test-code` · `pastel-sync` |
 | **Security & quality** | `security-check` · `antislop` · `launch-check` |
 | **Knowledge** | `brain` · `memory` · `context` |
@@ -256,8 +274,9 @@ block** the delivery. A hook stops any `git commit` or `git push` that carries a
 
 With `~/.claude/eden-brain/` enabled, every session, commit and push is condensed (secrets and
 `<private>` blocks redacted), distilled in the background and validated before anything is written.
-Project notes are saved directly; anything general waits in an inbox for your approval
-(`/eden:brain inbox`). The next session starts with it. Without the brain, Eden works exactly the same.
+Project notes and verified general knowledge (your way of working, platform facts) are saved on
+their own, without asking. The next session starts with it, and every message you send brings up the related notes (this project's and general knowledge only). Nothing of the brain is written into client repos. A team can also share a brain:
+a private git repo (`/eden:brain team join <url>`) that everyone working on the same project reads. Without the brain, Eden works exactly the same.
 
 **Long sessions stay fresh.** A context watcher measures the real context window: at 60 % it saves the
 session into the brain and refreshes the task checkpoint; at 80 % it tells you when it is safe to `/clear`.

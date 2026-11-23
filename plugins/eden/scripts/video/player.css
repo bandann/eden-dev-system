@@ -1,0 +1,88 @@
+/* Eden explain-video player (beats). Every animated value is set from JS for a time t (edenSeek): the
+   renderer captures frame by frame, so motion must be a pure function of t — no CSS transitions here. */
+:root {
+  --bg: #0d0d0f;
+  --panel: #17171b;
+  --line: #2a2a31;
+  --ink: #f5f5f4;
+  --muted: #8b8b94;
+  --accent: #f97316;
+  --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--font); }
+body { position: relative; }
+.grid { position: absolute; inset: 0; opacity: .5;
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 120px 120px; mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 75%); }
+.stage { position: absolute; inset: 0; }
+.actor { position: absolute; transform-origin: 50% 50%; will-change: transform, opacity; }
+
+/* text */
+.k-text { font-weight: 800; letter-spacing: -.02em; line-height: 1.05; text-align: center; }
+.k-text em { font-style: normal; color: var(--accent); }
+.k-badge { display: inline-block; font-size: 30px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--accent); border: 2px solid var(--accent); border-radius: 999px; padding: 10px 26px; white-space: nowrap; }
+
+/* icon */
+.k-icon svg { width: 100%; height: 100%; fill: none; stroke: var(--accent); stroke-width: 1.15; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.k-icon.muted svg { stroke: var(--ink); }
+
+/* card */
+.k-card { background: var(--panel); border: 2px solid var(--line); border-radius: 28px; padding: 34px 38px; }
+.k-card h4 { font-size: 38px; font-weight: 700; margin-bottom: 22px; display: flex; gap: 18px; align-items: center; }
+.k-card h4 i { flex: 0 0 18px; height: 18px; border-radius: 50%; background: var(--accent); }
+.k-card .ln { height: 16px; border-radius: 8px; background: var(--line); margin-top: 16px; }
+.k-card p { font-size: 30px; line-height: 1.35; color: var(--muted); }
+
+/* screenshot in a device */
+.k-shot { border-radius: 26px; overflow: hidden; background: #fff; border: 2px solid var(--line); box-shadow: 0 40px 90px rgba(0, 0, 0, .6); }
+.k-shot.phone { border: 16px solid #000; border-radius: 56px; }
+.k-shot.browser { padding-top: 44px; background: #1c1c21; }
+.k-shot.browser::before { content: ""; position: absolute; top: 15px; left: 20px; width: 70px; height: 14px;
+  background: radial-gradient(circle at 7px 7px, #ff5f57 6px, transparent 7px), radial-gradient(circle at 35px 7px, #febc2e 6px, transparent 7px), radial-gradient(circle at 63px 7px, #28c840 6px, transparent 7px); }
+.k-shot .view { position: relative; overflow: hidden; width: 100%; height: 100%; background: #fff; }
+.k-shot img { display: block; width: 100%; }
+.k-shot .after { position: absolute; inset: 0; }
+.k-shot .divider { position: absolute; top: 0; bottom: 0; width: 6px; background: var(--accent); transform: translateX(-50%); }
+.k-shot .tag { position: absolute; top: 18px; z-index: 2; font-size: 24px; font-weight: 700; padding: 6px 16px; border-radius: 10px; background: rgba(13, 13, 15, .85); color: #fff; }
+.k-shot .tag-before { left: 18px; }
+.k-shot .tag-after { right: 18px; color: var(--accent); }
+.k-mark { position: absolute; border: 6px solid var(--accent); border-radius: 18px; }
+
+/* magnitudes */
+.k-counter { text-align: center; }
+.k-counter .num { font-size: 190px; font-weight: 800; letter-spacing: -.04em; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+.k-counter .lab { font-size: 40px; color: var(--muted); margin-top: 14px; }
+.k-bars { display: flex; align-items: flex-end; gap: 28px; height: 100%; }
+.k-bars .bar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
+.k-bars .fill { width: 100%; border-radius: 16px 16px 6px 6px; background: var(--line); }
+.k-bars .bar.hi .fill { background: var(--accent); }
+.k-bars .v { font-size: 38px; font-weight: 800; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.k-bars .l { font-size: 26px; color: var(--muted); margin-top: 14px; text-align: center; }
+
+/* prompt box and code */
+.k-prompt { background: var(--panel); border: 2px solid var(--line); border-radius: 26px; padding: 30px 34px 26px; font-family: var(--mono);
+  font-size: 36px; line-height: 1.4; min-height: 150px; }
+.k-prompt .star { color: var(--accent); margin-right: 14px; }
+.k-prompt .hl { color: var(--accent); }
+.k-code { background: var(--panel); border: 2px solid var(--line); border-radius: 26px; padding: 30px 34px; font-family: var(--mono); font-size: 30px; line-height: 1.55; }
+.k-code .file { font-family: var(--font); color: var(--muted); font-size: 24px; margin-bottom: 14px; }
+.k-code pre { font-family: inherit; white-space: pre-wrap; word-break: break-all; }
+.k-code .add { color: #86efac; }
+.k-code .del { color: #fca5a5; text-decoration: line-through; text-decoration-color: rgba(252, 165, 165, .5); }
+.cursor { display: inline-block; width: .55em; height: 1.05em; background: var(--accent); vertical-align: -.15em; margin-left: 2px; }
+
+/* list */
+.k-list { display: grid; gap: 22px; }
+.k-list .it { display: flex; gap: 22px; align-items: center; font-size: 42px; font-weight: 600; }
+.k-list .it svg { flex: 0 0 52px; height: 52px; fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* kinetic captions */
+.caption { position: absolute; left: 6%; right: 6%; text-align: center; font-weight: 800; letter-spacing: -.01em; color: #fff;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, .85), 0 0 2px rgba(0, 0, 0, .9); line-height: 1.05; }
+.caption .w { display: inline-block; margin: 0 .14em; }
+.caption .w.hl { color: var(--accent); }
+.progress { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: rgba(255, 255, 255, .06); }
+.progress span { display: block; height: 100%; width: 0; background: var(--accent); }

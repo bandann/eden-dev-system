@@ -1,14 +1,18 @@
 """Eden ↔ UI/UX Pro Max — design direction when a task has no design, only with the dev's yes.
 
-UI/UX Pro Max (https://github.com/nextlevelbuilder/ui-ux-pro-max-skill, MIT) is an external dependency:
-Eden never ships or copies it. This script finds an installed copy, reports how to install it when there
-is none, and runs its search tool — only when the call carries `--approved`, which the skill
-`/eden:uiux-pro` adds after the dev said yes in the conversation. Nothing here ever runs on its own.
+UI/UX Pro Max (https://github.com/nextlevelbuilder/ui-ux-pro-max-skill, MIT, (c) Next Level Builder) ships
+inside Eden, pinned to one upstream commit, in `vendor/ui-ux-pro-max/` (see its VENDORED.json and
+LICENSE). This script runs that bundled copy — or, with `uiux.source: "installed"` in
+~/.claude/eden-config.json, the dev's own newer install — only when the call carries `--approved`, which the
+skill `/eden:uiux-pro` adds after the dev said yes in the conversation. Nothing here ever runs on its own.
 
-Usage: python -I eden_uiux.py <status | stack <eden-stack> [flavor] | run --approved [--save NAME] -- <args>>
-  status   where UI/UX Pro Max is (or how to install it), its version, and the project's uiux.mode
-  stack    the UI/UX Pro Max `--stack` for an Eden stack / flavour (empty = use the general UX rules)
-  run      search.py with <args>; --save NAME also writes the output to .claude/context/uiux-<date>-NAME.md
+Usage: python -I eden_uiux.py <status | stack <eden-stack> [flavor] | run --approved [--save NAME] -- <args>
+                               | vendor-update [--ref <commit|branch>]>
+  status         which copy is used (bundled or installed), its version, and the project's uiux.mode
+  stack          the UI/UX Pro Max `--stack` for an Eden stack / flavour (empty = use the general UX rules)
+  run            search.py with <args>; --save NAME also writes the output to .claude/context/uiux-<date>-NAME.md
+  vendor-update  refresh the bundled copy from upstream (default: main) — for Eden maintainers; it changes
+                 the plugin's own files, so it runs only when the dev asks for it
 
 Safety: `--persist`, `--force` and `--output-dir` are refused — UI/UX Pro Max never writes into the
 project; what is kept goes to .claude/context/ (or, with another yes, through create-fundaments).
@@ -44,6 +48,24 @@ STACKS = {
 }
 
 
+PLUGIN = Path(__file__).resolve().parent.parent
+BUNDLED = PLUGIN / "vendor" / SKILL
+UPSTREAM = "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git"
+
+
+def bundled():
+    p = BUNDLED / "scripts" / "search.py"
+    return p if p.is_file() else None
+
+
+def source_pref():
+    try:
+        data = json.loads((Path.home() / ".claude" / "eden-config.json").read_text(encoding="utf-8"))
+        return str((data.get("uiux") or {}).get("source", "bundled")).lower()
+    except (OSError, ValueError, AttributeError):
+        return "bundled"
+
+
 def candidates(project=None, home=None):
     home = Path(home or Path.home())
     roots = [home] + ([Path(project)] if project else [])
@@ -61,6 +83,12 @@ def candidates(project=None, home=None):
 
 
 def version_of(search_py):
+    vendored = Path(search_py).parent.parent / "VENDORED.json"
+    if vendored.is_file():
+        try:
+            return json.loads(vendored.read_text(encoding="utf-8")).get("version")
+        except ValueError:
+            pass
     for up in list(Path(search_py).parents)[:6]:
         for f in (up / ".claude-plugin" / "plugin.json", up / "package.json"):
             try:
@@ -74,12 +102,73 @@ def _vkey(v):
     return tuple(int(x) if x.isdigit() else 0 for x in re.split(r"[.-]", v or "0"))
 
 
-def locate(project=None, home=None):
-    """The newest installed search.py, or None."""
+def installed(project=None, home=None):
+    """The newest search.py the dev installed outside Eden, or None."""
     found = [p for p in candidates(project, home) if p.is_file()]
     if not found:
         return None
     return max(found, key=lambda p: (_vkey(version_of(p)), p.stat().st_mtime))
+
+
+def locate(project=None, home=None, prefer=None):
+    """The search.py to run: Eden's bundled copy by default; with uiux.source "installed", the dev's own
+    install when there is one (else the bundled copy). EDEN_UIUX_PATH always wins."""
+    env = os.environ.get("EDEN_UIUX_PATH")
+    if env and Path(env).is_file():
+        return Path(env)
+    if (prefer or source_pref()) == "installed":
+        return installed(project, home) or bundled()
+    return bundled() or installed(project, home)
+
+
+def vendor_update(ref="main"):
+    """Replace vendor/ui-ux-pro-max with upstream at `ref`. Sparse, shallow clone into a temp folder;
+    the copy keeps Eden's layout (UPSTREAM-SKILL.md, no tests) and a fresh VENDORED.json."""
+    import hashlib
+    import shutil
+    import tempfile
+    tmp = Path(tempfile.mkdtemp(prefix="eden-uiux-"))
+    env = dict(os.environ, GIT_TERMINAL_PROMPT="0")
+    def git(*a, cwd=None):
+        return subprocess.run(["git", *a], cwd=cwd, capture_output=True, text=True, env=env, timeout=180)
+    try:
+        r = git("clone", "-q", "--filter=blob:none", "--sparse", "--no-checkout", UPSTREAM, str(tmp / "src"))
+        if r.returncode:
+            return 1, "git clone falló: " + r.stderr[-300:]
+        src = tmp / "src"
+        git("sparse-checkout", "set", ".claude/skills/" + SKILL, cwd=src)
+        r = git("checkout", "-q", ref, cwd=src)
+        if r.returncode:
+            return 1, f"no existe la referencia {ref}: " + r.stderr[-200:]
+        commit = git("rev-parse", "HEAD", cwd=src).stdout.strip()
+        skill = src / ".claude" / "skills" / SKILL
+        if not (skill / "scripts" / "search.py").is_file():
+            return 1, "upstream ya no tiene scripts/search.py: revisa el cambio antes de actualizar"
+        version = None
+        try:
+            version = json.loads(git("show", f"{commit}:skill.json", cwd=src).stdout).get("version")
+        except ValueError:
+            pass
+        old = json.loads((BUNDLED / "VENDORED.json").read_text(encoding="utf-8")) if (BUNDLED / "VENDORED.json").exists() else {}
+        if BUNDLED.exists():
+            shutil.rmtree(BUNDLED)
+        shutil.copytree(skill, BUNDLED, ignore=shutil.ignore_patterns("tests", "__pycache__"))
+        if (BUNDLED / "SKILL.md").exists():
+            (BUNDLED / "SKILL.md").rename(BUNDLED / "UPSTREAM-SKILL.md")
+        lic = git("show", f"{commit}:LICENSE", cwd=src).stdout
+        (BUNDLED / "LICENSE").write_text(lic, encoding="utf-8")
+        files = sorted(p for p in BUNDLED.rglob("*") if p.is_file())
+        manifest = {"name": SKILL, "upstream": UPSTREAM.removesuffix(".git"), "commit": commit, "version": version,
+                    "license": "MIT", "copied": datetime.now().strftime("%Y-%m-%d"),
+                    "path_in_upstream": ".claude/skills/" + SKILL,
+                    "changes": ["SKILL.md renamed UPSTREAM-SKILL.md (reference only, not an Eden skill)",
+                                "scripts/tests removed"],
+                    "sha256": {p.relative_to(BUNDLED).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}}
+        (BUNDLED / "VENDORED.json").write_text(json.dumps(manifest, indent=1) + "\n", encoding="utf-8")
+        return 0, (f"UI/UX Pro Max {old.get('version', '?')} ({str(old.get('commit', ''))[:7]}) → {version} ({commit[:7]}). "
+                   "Revisa el diff de vendor/ui-ux-pro-max (que sus scripts sigan sin red ni comandos) y corre los tests.")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def mode(project):
@@ -105,8 +194,8 @@ def run(args, project, approved=False, save=None, search_py=None):
         return 2, f"No se permite {', '.join(bad)}: UI/UX Pro Max no escribe en el proyecto. Usa --save NAME."
     search_py = search_py or locate(project)
     if not search_py:
-        return 3, "UI/UX Pro Max no está instalado. " + install_hint()
-    # Not -I: the tool imports its sibling modules from its own folder. It is the dev's own install.
+        return 3, "No encuentro UI/UX Pro Max: falta la copia de Eden (vendor/ui-ux-pro-max). " + install_hint()
+    # Not -I: the tool imports its sibling modules from its own folder (bundled copy or the dev's install).
     r = subprocess.run([sys.executable, str(search_py), *args], capture_output=True, text=True, encoding="utf-8",
                        errors="replace", cwd=str(Path(search_py).parent), timeout=120,
                        creationflags=0x08000000 if os.name == "nt" else 0)
@@ -123,7 +212,8 @@ def run(args, project, approved=False, save=None, search_py=None):
 
 
 def install_hint():
-    return ("En Claude Code: " + " · ".join(f"`{c}`" for c in INSTALL["claude"])
+    return ("Eden trae su propia copia en vendor/ui-ux-pro-max; si falta, reinstala Eden. Para usar tu propia "
+            "instalación (uiux.source: installed): En Claude Code: " + " · ".join(f"`{c}`" for c in INSTALL["claude"])
             + ". En otras herramientas: " + " · ".join(f"`{c}`" for c in INSTALL["other"])
             + ". Instalarlo lo decide el dev.")
 
@@ -134,8 +224,14 @@ def main():
     project = os.getcwd()
     if cmd == "status":
         p = locate(project)
-        print(f"UI/UX Pro Max: {p.as_posix() + ' (' + (version_of(p) or 'versión ?') + ')' if p else 'no instalado — ' + install_hint()}")
+        kind = "incluido en Eden" if p and BUNDLED in p.parents else "instalación propia"
+        print(f"UI/UX Pro Max: {p.as_posix() + ' (' + (version_of(p) or 'versión ?') + ', ' + kind + ')' if p else 'no disponible — ' + install_hint()}")
+        print(f"uiux.source: {source_pref()} (bundled = la copia de Eden; installed = tu instalación si la hay)")
         print(f"uiux.mode de este proyecto: {mode(project)} (ask = se propone y se pregunta; off = nunca se propone)")
+    elif cmd == "vendor-update":
+        code, out = vendor_update(argv[argv.index("--ref") + 1] if "--ref" in argv[:-1] else "main")
+        print(out)
+        sys.exit(code)
     elif cmd == "stack":
         print(stack_for(argv[1] if len(argv) > 1 else "", argv[2] if len(argv) > 2 else None))
     elif cmd == "run":

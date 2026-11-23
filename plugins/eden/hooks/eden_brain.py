@@ -59,6 +59,7 @@ import eden_host  # one hook contract for every host (see hooks/eden_host.py)
 HOME = Path.home()
 CLAUDE_DIR = HOME / ".claude"
 BRAIN = CLAUDE_DIR / "eden-brain"
+TEAMS = CLAUDE_DIR / "eden-teams"     # clones of shared team brains (scripts/eden_team.py)
 STATE = BRAIN / ".state"
 QUEUE = STATE / "queue"
 LOGS = STATE / "logs"
@@ -76,6 +77,9 @@ DEFAULTS = {
     "learn_on_git": True,
     "distill_timeout_seconds": 900,
     "queue_max_age_days": 30,
+    # "auto": general knowledge (working style, platform facts) is written straight into the global
+    # brain. "inbox": the old behaviour, every general note waits for /eden:brain inbox.
+    "global_writes": "auto",
     "exclude": {},  # {"projects": [...names or path globs], "bash_patterns": [...regex]}
 }
 STATUS = STATE / "distill_status.json"
@@ -150,7 +154,7 @@ def remote_key(root):
         return None
     url = re.sub(r"^[a-z+]+://", "", m.group(1).strip())     # scheme
     url = url.split("@", 1)[-1]                                # user[:token]@
-    path = re.split(r"[:/]", url, 1)[-1] if re.search(r"[:/]", url) else url
+    path = re.split(r"[:/]", url, maxsplit=1)[-1] if re.search(r"[:/]", url) else url
     parts = [x for x in re.sub(r"\.git$", "", path.strip("/")).split("/") if x]
     if parts and parts[0].isdigit():  # ssh://host:2222/owner/repo — the port is not part of the name
         parts = parts[1:]
@@ -173,11 +177,63 @@ def project_slug(root):
 
 
 def project_brain(root):
-    """Where this project's learnings live: its own vault if it has one, else a global folder."""
-    local = root / ".claude" / "brain"
-    if local.is_dir() and root.resolve() != HOME.resolve():
-        return local, True
+    """Where this project's learnings live: always the project's folder in the global brain, never the
+    client's repo (nothing personal is written into a client repo). Returns (path, False); the flag is
+    kept for callers that still unpack it."""
     return BRAIN / "projects" / project_slug(root), False
+
+
+def legacy_vault(root):
+    """A vault that an Eden older than 4.1 created inside the repo (`.claude/brain/`), if any. It is no
+    longer written to; `/eden:brain migrate-vault` copies its notes into the global brain."""
+    local = Path(root) / ".claude" / "brain"
+    return local if local.is_dir() and Path(root).resolve() != HOME.resolve() else None
+
+
+def teams_config():
+    try:
+        teams = json.loads((CLAUDE_DIR / "eden-config.json").read_text(encoding="utf-8")).get("teams") or {}
+    except (OSError, ValueError, AttributeError):
+        return {}
+    return teams if isinstance(teams, dict) else {}
+
+
+def team_path(name, t):
+    return Path(os.path.expanduser(t.get("path") or str(TEAMS / name)))
+
+
+def team_brains(root):
+    """The shared team brains this project belongs to: [(team, folder)]. A project belongs to a team when
+    the team's clone has `projects/{slug}/` (eden_team.py link creates it). Nothing in the client repo."""
+    slug, out = project_slug(root), []
+    for name, t in sorted(teams_config().items()):
+        if not isinstance(t, dict) or t.get("enabled") is False:
+            continue
+        folder = team_path(name, t) / "projects" / slug
+        if folder.is_dir():
+            out.append((name, folder))
+    return out
+
+
+def team_pull_in_background():
+    """Refresh every team clone with `git pull --ff-only`, detached, at most every 10 minutes. The
+    session reads what is on disk now; the pull lands for the next prompt. Never prompts for a password."""
+    try:
+        if not teams_config():
+            return
+        stamp = STATE / "team-pull.stamp"
+        if stamp.exists() and time.time() - stamp.stat().st_mtime < 600:
+            return
+        script = HERE.parent / "scripts" / "eden_team.py"
+        if not script.exists():
+            return
+        STATE.mkdir(parents=True, exist_ok=True)
+        stamp.write_text(str(time.time()), encoding="utf-8")
+        subprocess.Popen([sys.executable, "-I", str(script), "pull", "--quiet"], stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=NO_WINDOW,
+                         start_new_session=os.name != "nt", close_fds=True)
+    except Exception:
+        pass
 
 
 # --- start ------------------------------------------------------------------------------------
@@ -215,19 +271,33 @@ def cmd_start():
         if re.search(r"^\s*- ", body, re.M):  # the seed template has no bullets yet: skip it
             parts.append("## Cómo trabaja el dev (respétalo sin que te lo repita)\n" + body.strip()[:3000])
 
-    global_notes = list_notes(BRAIN / "semantic", 25) + list_notes(BRAIN / "procedural", 15)
+    global_notes = list_notes(BRAIN / "semantic", 40) + list_notes(BRAIN / "procedural", 25)
     if global_notes:
         parts.append(f"## Conocimiento global (rutas relativas a {BRAIN.as_posix()}; léelo con Read si toca el tema)\n"
                      + "\n".join(f"- {note_title(f)} → {f.relative_to(BRAIN).as_posix()}" for f in global_notes))
+    parts.append("## Úsalo\nAntes de planear o tocar algo, busca en el cerebro (Grep por el tema, la "
+                 "herramienta o el error en estas rutas) y lee las notas que apliquen. Lo que aprendas en "
+                 "la sesión se guarda solo al cerrarla: no hace falta pedirle permiso al dev para recordar.")
 
     proj_notes = list_notes(pbrain, 20)
-    where = "vault local" if is_local else "cerebro global"
     if proj_notes:
-        parts.append(f"## Proyecto `{root.name}` ({where}; rutas relativas a {pbrain.as_posix()})\n" + "\n".join(
+        parts.append(f"## Proyecto `{root.name}` (cerebro personal; rutas relativas a {pbrain.as_posix()})\n" + "\n".join(
             f"- {note_title(f)} → {f.relative_to(pbrain).as_posix()}" for f in proj_notes))
+    for team, folder in team_brains(root):
+        tnotes = list_notes(folder, 25)
+        if tnotes:
+            parts.append(f"## Equipo `{team}` — lo que el equipo sabe de este proyecto (rutas relativas a "
+                         f"{folder.as_posix()})\n" + "\n".join(
+                             f"- {note_title(f)} → {f.relative_to(folder).as_posix()}" for f in tnotes))
+    team_pull_in_background()
+    legacy = legacy_vault(root)
+    if legacy:
+        parts.append(f"⚠️ Díselo al dev una vez: este repo tiene un cerebro antiguo dentro (`{legacy.as_posix()}`). "
+                     "Eden ya no escribe en los repos de clientes; `/eden:brain migrate-vault` copia sus notas al "
+                     "cerebro global, y luego el dev decide si borra esa carpeta del repo.")
 
     inbox = [f for f in (BRAIN / "inbox").glob("*.md")] if (BRAIN / "inbox").is_dir() else []
-    if inbox:
+    if inbox and global_mode() == "inbox":
         parts.append(
             f"## Bandeja: {len(inbox)} aprendizaje(s) pendiente(s) de aprobar\n"
             "Menciónalo al dev UNA vez, en una línea, al empezar: "
@@ -663,6 +733,7 @@ def enqueue(root, sid, event, parts, stats, cfg, git_section=""):
             "project": root.name, "project_root": root.as_posix(), "branch": branch,
             "project_brain": pbrain.as_posix(), "project_brain_is_local": is_local,
             "global_brain": BRAIN.as_posix(), "max_notes": cfg["max_notes_per_session"],
+            "global_writes": global_mode(cfg),
             "part": i, "parts": len(parts),
         }
         body = "```json\n" + json.dumps(header, indent=1) + "\n```\n\n"
@@ -803,6 +874,20 @@ RESULT = re.compile(r"^=== EDEN RESULT: (none|notes=(\d+)) ===[ \t]*$", re.M)
 DENIED = re.compile(r"(?i)(permission|permiso)\w*.{0,60}(denied|denegad)|sensitive file|archivo sensible")
 
 
+GLOBAL_DIRS = ("semantic", "procedural", "me")
+
+
+def global_mode(cfg=None):
+    return "inbox" if str((cfg or config()).get("global_writes", "auto")).lower() == "inbox" else "auto"
+
+
+def valid_global_path(parts):
+    """General knowledge goes to semantic/ or procedural/ (one level), or the dev's working style."""
+    if len(parts) != 2 or parts[0] not in GLOBAL_DIRS:
+        return False
+    return parts[0] != "me" or parts[1] == "working-style.md"
+
+
 def apply_output(header, output):
     """Validate every block first, then write. Returns (ok, kind, written, quarantined)."""
     output = (output or "").replace("\r\n", "\n")
@@ -813,8 +898,10 @@ def apply_output(header, output):
     expected = 0 if m.group(1) == "none" else int(m.group(2))
     if expected != len(blocks):
         return False, "format", [], []
+    gbrain = Path(header["global_brain"]).resolve()
     roots = {"project": Path(header["project_brain"]).resolve(),
-             "inbox": (Path(header["global_brain"]) / "inbox").resolve()}
+             "inbox": (gbrain / "inbox").resolve(), "global": gbrain}
+    to_inbox = header.get("global_writes") == "inbox"
     plan = []
     for meta_text, content in blocks:
         meta = {k.strip().lower(): v.strip() for k, v in
@@ -823,9 +910,12 @@ def apply_output(header, output):
         parts = rel.split("/")
         if (target not in roots or not rel.endswith(".md") or re.match(r"^([A-Za-z]:|/)", rel)
                 or any(p in ("", "..") or p.startswith((".", "_")) for p in parts)
-                or (target == "inbox" and len(parts) != 1)):
+                or (target == "inbox" and len(parts) != 1)
+                or (target == "global" and not valid_global_path(parts))):
             log(f"rejected note target={target!r} path={rel!r}")
             return False, "format", [], []
+        if target == "global" and to_inbox:  # the dev asked to approve general notes first
+            target, rel = "inbox", f"{header.get('date') or datetime.now().strftime('%Y-%m-%d')}-{parts[-1]}"
         dest = (roots[target] / rel).resolve()
         try:
             dest.relative_to(roots[target])
@@ -869,7 +959,11 @@ def dedupe_by_topic(dest, content, roots):
     root = next((r for r in roots.values() if r in dest.parents), None)
     if root is None:
         return dest
-    for f in brain_notes(root):
+    # The global brain holds every project's folder and the inbox: a general note merges only with
+    # general notes, never with a project's note that happens to share its topic.
+    pool = ([f for d in ("semantic", "procedural") for f in brain_notes(root / d)]
+            if root == roots.get("global") else brain_notes(root))
+    for f in pool:
         try:
             if f != dest and note_topic(f.read_text(encoding="utf-8", errors="replace")[:1500]) == topic:
                 log(f"topic {topic}: {dest.name} merged into existing {f.name}")
@@ -910,9 +1004,15 @@ def inline_context(qfile, header):
             budget -= len(text)
         else:
             listed.append(f"- `{rel}` (proyecto, contenido no incluido)")
+    style = gbrain / "me" / "working-style.md"
+    if style.exists():
+        text = style.read_text(encoding="utf-8", errors="replace")
+        if len(text) <= budget:
+            full.append(f"#### `me/working-style.md` (global, `target: global`)\n\n````markdown\n{text}\n````\n")
+            budget -= len(text)
     for f in sorted(brain_notes(gbrain)):
         rel = f.relative_to(gbrain)
-        if rel.parts[0] == "projects" or pbrain in f.parents:
+        if rel.parts[0] in ("projects", "inbox") or pbrain in f.parents or f == style:
             continue  # other projects are not this distiller's business; this one is above
         first = next((ln.strip() for ln in f.read_text(encoding="utf-8", errors="replace").splitlines()
                       if ln.strip() and ln.strip() != "---"), "")[:160]
@@ -934,9 +1034,12 @@ def run_prompt(qfile, header, inline=False):
         + part +
         f"- Cerebro global: `{header['global_brain']}`\n"
         f"- Cerebro del proyecto `{header['project']}`: `{header['project_brain']}` "
-        f"({'vault local del repo' if header['project_brain_is_local'] else 'carpeta del proyecto dentro del cerebro global'})\n"
+        "(carpeta del proyecto dentro del cerebro global)\n"
         f"- Fecha: {header['date']} · sesión `{header['session_id']}` · rama `{header['branch']}`\n"
         f"- Máximo de notas nuevas o actualizadas: {header['max_notes']}\n"
+        + ("- Lo general (`target: global`) se guardará en la bandeja para que el dev lo apruebe\n"
+           if header.get("global_writes") == "inbox" else
+           "- Lo general (`target: global`) se escribe directo en el cerebro global\n") +
         "- Recuerda: NO escribas archivos. Responde con los bloques `=== EDEN NOTE ===` y termina con "
         "la línea `=== EDEN RESULT: notes=N ===` (o `=== EDEN RESULT: none ===`).\n") + (
         inline_context(qfile, header) if inline else "")
@@ -1094,6 +1197,47 @@ def distill_one(qfile, cfg):
         return False
 
 
+def cmd_migrate_vault(cwd):
+    """Copy the notes of a legacy in-repo vault (`.claude/brain/`) into the project's folder in the global
+    brain. Copies, never moves or deletes: the dev decides what to do with the folder in the client repo.
+    Generated parts (code/, design/shots) are skipped; a note that already exists is kept and the vault's
+    copy lands next to it with a `-from-vault` suffix."""
+    root = project_root(cwd)
+    vault = legacy_vault(root)
+    if not vault:
+        return {"ok": True, "copied": [], "note": "no .claude/brain/ in this repo"}
+    dest_root = project_brain(root)[0]
+    copied, skipped = [], []
+    for f in sorted(vault.rglob("*.md")):
+        rel = f.relative_to(vault)
+        if rel.parts[0] in ("code", ".obsidian", "_templates") or any(p.startswith(".") for p in rel.parts):
+            skipped.append(rel.as_posix())
+            continue
+        if rel.parts[0] == "memory" and len(rel.parts) > 1:  # memory/semantic/x.md -> semantic/x.md
+            rel = Path(*rel.parts[1:])
+        dest = dest_root / rel
+        if dest.exists():
+            if dest.read_bytes() == f.read_bytes():
+                skipped.append(rel.as_posix())
+                continue
+            dest = dest.with_name(dest.stem + "-from-vault.md")
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(f.read_bytes())
+        copied.append(dest.as_posix())
+    design = vault / "design"
+    if design.is_dir():  # the measured-Figma cache, minus screenshots
+        for f in design.rglob("*"):
+            if f.is_file() and "shots" not in f.relative_to(design).parts:
+                dest = dest_root / "design" / f.relative_to(design)
+                if not dest.exists():
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    dest.write_bytes(f.read_bytes())
+                    copied.append(dest.as_posix())
+    log(f"migrate-vault {root.name}: {len(copied)} file(s) copied to {dest_root.as_posix()}")
+    return {"ok": True, "from": vault.as_posix(), "to": dest_root.as_posix(), "copied": copied, "skipped": skipped,
+            "next": "the vault folder is still in the client repo: delete it there (a commit in that repo) when you are ready"}
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     try:
@@ -1120,6 +1264,8 @@ def main():
             cmd_redact_queue()
         elif cmd == "cleanup":
             cleanup(config())
+        elif cmd == "migrate-vault":
+            print(json.dumps(cmd_migrate_vault(sys.argv[2] if len(sys.argv) > 2 else os.getcwd()), indent=1))
     except Exception as exc:  # never break the session
         log(f"error in {cmd}: {exc!r}")
 

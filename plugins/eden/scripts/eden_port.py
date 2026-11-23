@@ -63,7 +63,7 @@ SKILLS = HOME / ".agents" / "skills"
 RECORD = EDEN / "installed.json"
 APPLY = "--apply" in sys.argv
 STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
-KIT_DIRS = ("agents", "brain", "config", "hooks", "memory", "profiles", "rules", "scripts", "skills", "team",
+KIT_DIRS = ("agents", "brain", "config", "hooks", "memory", "profiles", "rules", "scripts", "skills", "team", "vendor",
             "teams", ".claude-plugin")
 KIT_FILES = ("CLAUDE.base.md", "VERSION", "THIRD_PARTY_NOTICES.md")
 TEXT = {".md", ".json", ".toml", ".txt", ".yml", ".yaml"}

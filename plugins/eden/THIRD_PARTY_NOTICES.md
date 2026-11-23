@@ -21,8 +21,11 @@ only for a nameable reason, and keeping one capability table per AI tool. They w
 in Python; no code, skill text or asset from that project is included. "Gentle AI" and "Engram" are its
 authors' trademarks and are not used by Eden.
 
-## UI/UX Pro Max (external dependency, not bundled)
+## UI/UX Pro Max (bundled)
 
-`/eden:uiux-pro` and `scripts/eden_uiux.py` call [UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
-(MIT License, nextlevelbuilder) when the dev has installed it. Eden ships none of its code, data or
-text; it only locates the dev's own install and runs its search tool after the dev's explicit yes.
+`vendor/ui-ux-pro-max/` is a copy of the `ui-ux-pro-max` skill from
+[UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill), MIT License,
+Copyright (c) 2024 Next Level Builder. Full text: `vendor/ui-ux-pro-max/LICENSE`. The upstream commit,
+version and a checksum of every file are in `vendor/ui-ux-pro-max/VENDORED.json`. Changes: `SKILL.md`
+renamed `UPSTREAM-SKILL.md` (kept as reference, not loaded as a skill) and `scripts/tests/` removed.
+`/eden:uiux-pro` and `scripts/eden_uiux.py` run its search tool only after the dev's explicit yes.

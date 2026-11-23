@@ -24,7 +24,7 @@ team = (ROOT / "rules" / "eden-team-rules.md").read_text(encoding="utf-8")
 vocab_block = team.split("### Vocabulario de roles")[1].split("###")[0]
 VOCAB = set(re.findall(r"^\| `([a-z-]+)` \|", vocab_block, re.M))
 check("vocabulary has tester", "tester" in VOCAB)
-check("vocabulary size", len(VOCAB) == 14)
+check("vocabulary size", len(VOCAB) == 15)
 
 AGENTS = {p.stem for p in (ROOT / "agents").glob("*.md")}
 SKILLS = {p.name for p in (ROOT / "skills").iterdir() if (p / "SKILL.md").is_file()}

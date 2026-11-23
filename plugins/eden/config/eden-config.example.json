@@ -39,6 +39,31 @@
     "_comment": "Proveedor de IA para las llamadas que Eden hace por su cuenta (hoy, la destilacion del cerebro). CLIs: corren en solo lectura cuando el CLI lo permite (claude: --safe-mode + allowedTools; codex: --sandbox read-only) y necesitan estar instalados y con sesion. APIs: una peticion HTTPS sin herramientas; la sesion condensada (ya redactada) y las notas del proyecto viajan dentro del prompt, o sea, se envian a ese proveedor. NOTA: esto no cambia con que modelo hablas en la sesion; solo las llamadas headless de Eden."
   },
 
+  "teams": {
+    "_comment": "Cerebros de equipo (scripts/eden_team.py, /eden:brain team): repos git privados que comparte el equipo. Los escribe team join/init; no se editan a mano salvo push y share_general. Un proyecto pertenece a un equipo si el clon tiene projects/{slug-del-remoto}/. Nada se escribe en el repo del cliente.",
+    "_example": {"url": "git@github.com:acme/eden-team-brain.git", "path": "~/.claude/eden-teams/acme", "push": "auto", "share_general": false}
+  },
+
+  "video": {
+    "tts": {"provider": "auto", "voice": null, "rate": 0, "speed": 1.0},
+    "_comment": "Voz de /eden:explain-video (scripts/eden_voice.py). provider: auto (Kokoro si esta instalado, si no la voz del sistema; nunca una API de pago sola) | system | kokoro | openai | elevenlabs. voice: nombre de la voz (SAPI: 'Microsoft Zira Desktop'; Kokoro: af_heart, ef_dora...; OpenAI: alloy...; ElevenLabs: voice id). Las claves solo por variable de entorno (OPENAI_API_KEY, ELEVENLABS_API_KEY o key_env)."
+  },
+
+  "uiux": {
+    "source": "bundled",
+    "_comment": "Que copia de UI/UX Pro Max usa /eden:uiux-pro: bundled = la que trae Eden (vendor/ui-ux-pro-max, fijada a un commit); installed = tu propia instalacion si la hay (si no, la de Eden). Correr sigue necesitando tu si en cada tarea."
+  },
+
+  "recall": {
+    "enabled": true,
+    "top_k": 3,
+    "max_chars": 3000,
+    "snippet_chars": 600,
+    "repeat_after": 20,
+    "min_terms": 2,
+    "_comment": "Recall del cerebro en cada prompt (hook eden-context-watch): busca en las notas del proyecto actual y en semantic/ y procedural/ del global las que comparten palabras con el mensaje, e inyecta hasta top_k en max_chars. Nunca notas de otro proyecto. Una nota ya dada no se repite en repeat_after prompts. Indice: eden-brain/.state/recall.db (desechable, se regenera)."
+  },
+
   "learning": {
     "enabled": true,
     "model": "sonnet",
@@ -48,11 +73,12 @@
     "graphify_update": true,
     "learn_on_git": true,
     "queue_max_age_days": 30,
+    "global_writes": "auto",
     "exclude": {
       "projects": [],
       "bash_patterns": [],
       "_comment": "projects: nombres o rutas con comodines que nunca se aprenden (p.ej. \"cliente-confidencial\", \"C:/Users/*/Sites/privado/*\"). bash_patterns: regex de comandos que no se registran (p.ej. \"\\.env\", \"ssh \")."
     },
-    "_comment": "Aprendizaje automatico del cerebro (hooks SessionStart/SessionEnd/PreCompact). Lo del proyecto se escribe directo; lo general va a eden-brain/inbox para aprobar con /eden:brain inbox. Ver rules/eden-brain-rules.md. learn_on_git: tambien destila antes de cada git commit / push que ejecuta Claude (nota episodica por rama). Los secretos y lo marcado <private>...</private> se redactan antes de encolar. Un proyecto se excluye tambien con learning.enabled:false en su project-config.json."
+    "_comment": "Aprendizaje automatico del cerebro (hooks SessionStart/SessionEnd/PreCompact). Lo del proyecto y lo general verificado se escriben directo; global_writes: inbox hace que lo general espere aprobacion en /eden:brain inbox. Ver rules/eden-brain-rules.md. learn_on_git: tambien destila antes de cada git commit / push que ejecuta Claude (nota episodica por rama). Los secretos y lo marcado <private>...</private> se redactan antes de encolar. Un proyecto se excluye tambien con learning.enabled:false en su project-config.json."
   }
 }

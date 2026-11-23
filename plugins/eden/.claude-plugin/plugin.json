@@ -1,7 +1,7 @@
 {
   "name": "eden",
   "displayName": "Eden",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Company-agnostic development kit: plan-first workflow, reuse-first building, pixel-perfect Figma fidelity, stack teams (Shopify, WordPress), tracker-agnostic tickets (Asana, SMG Hub, ClickUp), a security layer with a secret guard, and an optional self-learning brain.",
   "author": { "name": "bandann" },
   "repository": "https://github.com/bandann/eden-dev-system",

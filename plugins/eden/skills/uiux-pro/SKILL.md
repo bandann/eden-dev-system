@@ -5,7 +5,7 @@ description: >
   escribe `/eden:uiux-pro`, o cuando un flujo de Eden (ignition-task, create-new-section, section-mod,
   create-fundaments, antislop) detectó que la tarea no tiene fuente de diseño, le mostró el bloque 🎨 y el
   dev respondió que sí. No lo actives porque falte un Figma ni porque la tarea sea visual: se propone y se
-  espera. — Qué hace cuando SÍ se invoca: usa UI/UX Pro Max (dependencia externa, MIT) para proponer una
+  espera. — Qué hace cuando SÍ se invoca: usa UI/UX Pro Max (incluido en Eden, MIT) para proponer una
   dirección visual —patrón, estilo, paleta, tipografía, efectos, reglas de UX y lo que hay que evitar— para
   el producto y el stack del proyecto, la traduce a los tokens y las reglas de Eden (Figma y fundamentos
   mandan, WCAG AA, reuse-first, antislop) y la presenta como propuesta. No escribe código ni fundamentos
@@ -18,9 +18,12 @@ disable-model-invocation: true
 
 Argumento recibido: `$ARGUMENTS`
 
-UI/UX Pro Max es una **dependencia externa** (https://github.com/nextlevelbuilder/ui-ux-pro-max-skill):
-una base local de estilos, paletas, tipografías, guías de UX y reglas por stack. Eden no la incluye; la
-usa si el dev la tiene instalada. El script puente es `${CLAUDE_PLUGIN_ROOT}/scripts/eden_uiux.py`.
+UI/UX Pro Max (https://github.com/nextlevelbuilder/ui-ux-pro-max-skill, MIT, © Next Level Builder) es
+una base local de estilos, paletas, tipografías, guías de UX y reglas por stack. **Eden la trae incluida**,
+fijada a un commit de upstream, en `${CLAUDE_PLUGIN_ROOT}/vendor/ui-ux-pro-max/` (su `LICENSE` y su
+`VENDORED.json` dicen de dónde y de qué versión). No hay que instalar nada. Si el dev prefiere su propia
+instalación más nueva, `uiux.source: "installed"` en `~/.claude/eden-config.json`. El script puente es
+`${CLAUDE_PLUGIN_ROOT}/scripts/eden_uiux.py`.
 
 > **La regla de oro de este skill:** UI/UX Pro Max **nunca corre sin un sí del dev en ese momento**. Ni
 > siquiera una búsqueda de solo lectura. Un sí cubre la consulta que se le mostró; otra consulta distinta
@@ -44,15 +47,15 @@ El flujo que lo detecta muestra este bloque y **espera**:
 Con un **no**, se sigue como hasta ahora (tarea no visual, capa estética de antislop si aplica) y no se
 vuelve a preguntar en esa tarea.
 
-### Paso 1 — ¿Está instalado?
+### Paso 1 — ¿Qué copia se usa?
 
 ```bash
 python -I "${CLAUDE_PLUGIN_ROOT}/scripts/eden_uiux.py" status
 ```
 
-Si no está, **no lo instales tú**: dile al dev, en una línea, cómo se instala (el script da los comandos:
-en Claude Code `/plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill` y
-`/plugin install ui-ux-pro-max@ui-ux-pro-max-skill`; en otras herramientas su CLI `uipro init`) y detente.
+Dice qué copia corre (la incluida en Eden, o la instalación propia del dev con `uiux.source: "installed"`)
+y su versión. Si dice «no disponible», falta `vendor/ui-ux-pro-max` en el plugin: díselo al dev
+(reinstalar Eden lo arregla) y detente. **No instales nada por tu cuenta.**
 
 ### Paso 2 — Armar la consulta (y mostrarla)
 
@@ -117,7 +120,8 @@ Max (propuesta aprobada)`, y la capa estética de antislop se aplica sobre ella.
 ### Qué NO hace
 
 - Correr sin el sí del dev, o decidir por él entre las opciones del Paso 5.
-- Instalar UI/UX Pro Max, sus CLIs o fuentes.
+- Instalar UI/UX Pro Max, sus CLIs o fuentes, o actualizar la copia incluida (`eden_uiux.py vendor-update` solo
+  lo corre quien mantiene Eden, cuando lo pide).
 - Escribir código, tokens, `docs/design-system.md` o el `CLAUDE.md`: eso pasa por los flujos de Eden, con
   su propia aprobación.
 - Reemplazar un Figma, aunque la propuesta parezca mejor.

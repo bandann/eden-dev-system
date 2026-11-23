@@ -14,7 +14,7 @@ que ya se midió se recuerda, y **solo se vuelve a medir lo que cambió**.
 
 | Si el proyecto… | La caché está en |
 |---|---|
-| tiene vault local (`/eden:brain init`) | `{proyecto}/.claude/brain/design/` — se versiona con el repo |
+| tiene un `.claude/brain/` antiguo | se ignora: la caché va al cerebro global (`/eden:brain migrate-vault` copia la vieja) |
 | no tiene vault, pero existe el cerebro global | `~/.claude/eden-brain/projects/{proyecto}/design/` |
 | no tiene ningún cerebro | `~/.claude/eden-cache/design/{proyecto}/` |
 

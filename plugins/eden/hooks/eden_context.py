@@ -213,12 +213,13 @@ def cmd_watch():
         return
     sid, transcript = payload.get("session_id") or "", payload.get("transcript_path")
     cwd = payload.get("cwd") or os.getcwd()
+    rec = recall_for(payload, sid, cwd)
     cfg = config(cwd)
     if not cfg.get("enabled", True) or not sid:
-        return
+        return emit_watch(None, rec)
     m = measure(sid, transcript, cfg)
     if not m or m["pct"] < cfg["save_at"]:
-        return
+        return emit_watch(None, rec)
     st = load_state(sid)
     out_msg, out_ctx = None, None
     checkpoint = checkpoint_file(cwd)
@@ -244,9 +245,32 @@ def cmd_watch():
         st["warned_pct"] = m["pct"]
         save_state(sid, st)
 
-    if not out_msg and not out_ctx:
-        return
-    eden_host.emit("UserPromptSubmit", out_ctx, out_msg)
+    emit_watch(out_msg, "\n\n".join(x for x in (out_ctx, rec) if x) or None)
+
+
+def emit_watch(message, context):
+    if message or context:
+        eden_host.emit("UserPromptSubmit", context, message)
+
+
+def recall_for(payload, sid, cwd):
+    """The brain notes related to this prompt (hooks/eden_recall.py), or None. Never raises."""
+    try:
+        if not brain().config()["enabled"]:
+            return None
+        spec = importlib.util.spec_from_file_location("eden_recall", HERE / "eden_recall.py")
+        rec = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rec)
+        root = brain().project_root(cwd)
+        teams = [f for _, f in brain().team_brains(root)]
+        return rec.recall_block(payload.get("prompt") or "", sid, brain().project_brain(root)[0],
+                                team_folders=teams)
+    except Exception as exc:
+        try:
+            brain().log(f"recall error: {exc!r}")
+        except Exception:
+            pass
+        return None
 
 
 def recent_session_notes(cwd, hours=24, limit=12):
@@ -257,7 +281,8 @@ def recent_session_notes(cwd, hours=24, limit=12):
     root = b.project_root(cwd)
     pbrain, _ = b.project_brain(root)
     since = time.time() - hours * 3600
-    notes = b.recent_notes([pbrain, b.BRAIN / "inbox"], since)
+    notes = b.recent_notes([pbrain, b.BRAIN / "inbox", b.BRAIN / "semantic", b.BRAIN / "procedural",
+                            b.BRAIN / "me"], since)
     notes.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     out = []
     for p in notes[:limit]:

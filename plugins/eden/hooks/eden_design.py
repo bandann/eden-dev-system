@@ -56,9 +56,8 @@ def brain():
 # --- where ------------------------------------------------------------------------------------
 
 def cache_dir(cwd=None):
-    """{project}/.claude/brain/design/ when the project has a vault; else the project's folder in the
-    global brain; without any brain, ~/.claude/eden-cache/design/{project}. Never creates files in a
-    client repo that has no vault (that needs /eden:brain init)."""
+    """The project's folder in the global brain (`design/`); without a brain,
+    ~/.claude/eden-cache/design/{project}. Never inside the client repo."""
     b = brain()
     root = b.project_root(cwd or os.getcwd())
     pbrain, is_local = b.project_brain(root)
